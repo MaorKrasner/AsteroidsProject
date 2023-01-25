@@ -88,6 +88,8 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	private volatile boolean transfered = false;
 
+	private volatile boolean outOfBounds;
+
 	// constructor
 	public Player(int x, int y, Game game, Game.KeyboardListener controls, int panelIndex)
 	{
@@ -214,25 +216,25 @@ public class Player extends Thread implements Serializable, ActionListener
 		game.balls.get(game.balls.size() - 1).start();
 	}
 
-	private boolean checkLimitsOfX(int index) throws ArrayIndexOutOfBoundsException
+	private boolean checkXBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
 		return polygon.xpoints[index] > 0 && polygon.xpoints[index] < Constants.SCREEN_WIDTH;
 	}
 
-	private boolean checkLimitsOfY(int index) throws ArrayIndexOutOfBoundsException
+	private boolean checkYBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
 		return polygon.ypoints[index] > 0 && polygon.ypoints[index] < Constants.SCREEN_HEIGHT;
 	}
 
-	private boolean checkLimitsOfShooter(int index) throws ArrayIndexOutOfBoundsException
+	private boolean checkBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
-		return checkLimitsOfX(index) && checkLimitsOfY(index);
+		return checkXBounds(index) && checkYBounds(index);
 	}
 
 	public void move() throws ArrayIndexOutOfBoundsException
 	{
 		Point center = findCentroidOfTriangle();
-		boolean isInBounds = checkLimitsOfShooter(0) || checkLimitsOfShooter(1) || checkLimitsOfShooter(2);
+		boolean isInBounds = checkBounds(0) || checkBounds(1) || checkBounds(2);
 
 		//System.out.println("x's : " +  Arrays.toString(polygon.xpoints));
 		//System.out.println("y's : " +  Arrays.toString(polygon.ypoints));
@@ -310,7 +312,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	}
 
 	private void transferPlayer() {
-		boolean isOutOfWidth = !(checkLimitsOfX(0) || checkLimitsOfX(1) || checkLimitsOfX(2));
+		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
 		int toRemoveOrAdd = findValueForChange(isOutOfWidth);
 		int sign = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
 		int valueToTransfer = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + toRemoveOrAdd) * sign : (Constants.SCREEN_HEIGHT + toRemoveOrAdd) * sign;
@@ -463,11 +465,13 @@ public class Player extends Thread implements Serializable, ActionListener
 				}
 			}
 
-			// only if the player is visible, we can check if it makes collision
-			if (this.visible)
-			{
-				manageControls(controls.pressedKeys);
+			manageControls(controls.pressedKeys);
 
+			this.outOfBounds = checkBounds(0) && checkBounds(1) && checkBounds(2);
+
+			// only if the player is in bounds, we can check if it makes collision
+			if (this.outOfBounds)
+			{
 				// check for all asteroids
 				for (int indAst = 0; indAst < game.asteroids.size() && !this.foundHit; indAst++)
 				{
