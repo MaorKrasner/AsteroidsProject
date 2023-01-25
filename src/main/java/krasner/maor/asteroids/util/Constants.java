@@ -7,8 +7,9 @@ import krasner.maor.asteroids.objects.SpaceshipsMonitor;
 import lombok.experimental.UtilityClass;
 
 /***
- * class that contains all the constants that we use in the game
+ * class that contains all the constants that are used in the game
  */
+
 @UtilityClass
 public final class Constants
 {
@@ -40,11 +41,10 @@ public final class Constants
     public final static int SCREEN_HEIGHT = 720;
 
     /***
-     * Networking constants (port, server ip address and chuck size)
+     * Networking constants (port and server ip address)
      ***/
     public static final int PORT = 2358;
     public static final String SERVER_IP = "localhost";
-    public static final int CHUNK_SIZE = 1024;
 
     /***
      * array that includes all the sizes of the game objects (ball, asteroid, spaceship)

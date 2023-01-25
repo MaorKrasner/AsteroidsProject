@@ -6,34 +6,22 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import java.io.File;
 
+/***
+ * class that contains functions to display audio in the game
+ */
+
 @UtilityClass
 public class AudioUtil {
 
-    // function that plays Audio
+    /***
+     * function that play audio
+     * @param filename - the name of the file to play
+     */
     public void playAudio(String filename) {
         try {
             Clip clip = AudioSystem.getClip();
             clip.open(AudioSystem.getAudioInputStream(new File(filename)));
             clip.start();
-        } catch (Exception ignored) {
-
-        }
-    }
-
-    // function that plays long Audio
-    public void playAudio2(String filename) {
-        try {
-            Clip clip = AudioSystem.getClip();
-            clip.open(AudioSystem.getAudioInputStream(new File(filename)));
-            clip.start();
-
-            while (!clip.isRunning())
-                Thread.sleep(10);
-            while (clip.isRunning())
-                Thread.sleep(10);
-            clip.close();
-        } catch (Exception e) {
-
-        }
+        } catch (Exception ignored) {}
     }
 }

@@ -3,92 +3,141 @@ package krasner.maor.asteroids.multiplayer;
 import krasner.maor.asteroids.util.Constants;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.LinkedList;
+
+/***
+ * this class represents the server in the multiplayer section
+ */
 
 @Slf4j
 public class Server {
-    private ServerSocket server;
-    public static LinkedList<ServerCommunication> clients;
-    private boolean isServerOn;
+    ServerSocket server; // socket of the server
+    public static boolean isServerOn = false; // variable to know whether the server is on or off
 
-    public Server() {
-        try {
-            this.server = new ServerSocket(Constants.PORT);
-            this.isServerOn = true;
-            Server.clients = new LinkedList<>();
-            new Thread(() -> {
-                getNewConnection();
-            }).start();
-            log.info("Server is listening on port : " + Constants.PORT);
-        } catch (IOException ignored){}
+    public static int ClientCounter = 0; // counter to see how many clients connected to the server
+
+    public static LinkedList<Socket> clients = new LinkedList<>(); // list of sockets that are connected to the server
+
+    Socket socket1; // socket for the first client
+    Socket socket2; // socket for the second client
+
+    OutputStream outputStream1; // output stream for the first client
+    ObjectOutputStream objectOutputStream1; // object output stream for the first client
+    InputStream inputStream1; // input stream for the first client
+    ObjectInputStream objectInputStream1; // object input stream for the first client
+
+    OutputStream outputStream2; // output stream for the second client
+    ObjectOutputStream objectOutputStream2; // object output stream for the second client
+    InputStream inputStream2; // input stream for the second client
+    ObjectInputStream objectInputStream2; // object input stream for the second client
+
+    /***
+     * constructor
+     * @throws IOException
+     */
+    public Server() throws IOException
+    {
+        server = new ServerSocket(Constants.PORT);
+        isServerOn = true;
+        serverConnection();
     }
 
-    public void getNewConnection() {
-        while (this.isServerOn) {
-            try {
-                Socket newSocket = this.server.accept();
-                ServerCommunication newClient = new ServerCommunication(newSocket);
-                Server.clients.add(newClient);
-                log.info("A new connection to the server " + newSocket);
-                if (clients.size() >= 2)
-                {
-                    log.info("hey");
-                    for (int i = 0; i < clients.size(); i++)
-                    {
-                        ServerCommunication current = clients.get(i);
-                        current.getObjectOutputStream().writeObject("start");
-                        new Thread(() -> {
-                            while (clients.contains(current)) {
-                                try {
-                                    if (clients.size() >= 2)
-                                        getMessagesFromClient(current);
-                                } catch (SocketException ignored) {
-                                    current.close();
-                                    clients.remove(current);
-                                    log.info("The client " + current + " has been removed.");
-                                }
-                            }
-                        }).start();
+    /***
+     * function that accepts the request of the clients to connect to the server
+     * @throws IOException
+     */
+    public void serverConnection() throws IOException
+    {
+        socket1 = server.accept();
+        clients.add(socket1);
+        log.info("AMOUNT OF CLIENTS : " + clients.size());
+        log.info("AM : " + Server.ClientCounter);
+        outputStream1 = socket1.getOutputStream();
+        objectOutputStream1 = new ObjectOutputStream(outputStream1);
+
+        objectOutputStream1.writeObject(Server.ClientCounter);
+        ++Server.ClientCounter;
+
+        socket2 = server.accept();
+        clients.add(socket2);
+        log.info("AMOUNT OF CLIENTS : " + clients.size());
+        log.info("AM : " + Server.ClientCounter);
+        outputStream2 = socket2.getOutputStream();
+        objectOutputStream2 = new ObjectOutputStream(outputStream2);
+
+        objectOutputStream2.writeObject(Server.ClientCounter);
+        ++Server.ClientCounter;
+
+        String s = "start";
+        objectOutputStream1.writeObject(s);
+        objectOutputStream2.writeObject(s);
+
+        inputStream1 = socket1.getInputStream();
+        objectInputStream1 = new ObjectInputStream(inputStream1);
+
+        inputStream2 = socket2.getInputStream();
+        objectInputStream2 = new ObjectInputStream(inputStream2);
+
+        // handler thread for client 1
+        Thread handleClient1 = new Thread(() -> {
+            while(true)
+            {
+                try {
+                    Data d1 = (Data) objectInputStream1.readObject(); // read data from client1
+
+                    objectOutputStream2.writeObject(d1); // send data to client2
+
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
-            } catch (IOException ignored){}
-        }
-    }
-
-    private void getMessagesFromClient(ServerCommunication client) throws SocketException {
-        DataObject d = client.recvMsgFromClient();
-        if (d != null)
-        {
-            if (d.getIsExit()) {
-                client.close();
-                Server.clients.remove(client);
-                log.info("The client : " + client + " has left the game");
             }
-            else {
-                log.info("Received a message from the client : " + client + ":\n");
-                for (int i = 0; i < clients.size(); i++) {
-                    if (clients.get(i) != client) {
-                        clients.get(i).sendMsgToClient(d);
+        });
+
+        // handler thread for client 2
+        Thread handleClient2 = new Thread(() -> {
+            while (true)
+            {
+                try {
+                    Data d2 = (Data) objectInputStream2.readObject(); // read data from client2
+
+                    objectOutputStream1.writeObject(d2);// send data to client1
+
+                    try {
+                        Thread.sleep(1);
+
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
+
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
             }
-        }
+        });
+
+        // start the threads that run concurrently in Server
+        handleClient1.start();
+        handleClient2.start();
     }
 
-    public void turnOffServer() {
+    /***
+     * close the server
+     */
+    public void closeServer() {
         this.isServerOn = false;
-        for (ServerCommunication client : Server.clients)
-            client.close();
-        try {
-            this.server.close();
-        } catch (IOException ignored){}
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         new Server();
     }
 }

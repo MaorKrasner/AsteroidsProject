@@ -7,20 +7,20 @@ import java.awt.*;
 
 public class CreditsPanel extends JPanel
 {
-	private final Image img;
+	private final Image creditsImage;
 	
 	public CreditsPanel()
 	{
 		super();
 		ImageIcon ic = new ImageIcon("src/main/resources/images/asteroidsbackgif.gif");
-		img = ic.getImage();
+		creditsImage = ic.getImage();
 		setSize(Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT);
 	}
 	
 	public void paintComponent(Graphics g) 
 	{ 
 		// must be the first line, so we can draw on the gif and it will not "destroy" the strings
-		g.drawImage(img, 0, 0, 1280, 720, this); 
+		g.drawImage(creditsImage, 0, 0, 1280, 720, this);
 		
 		g.setFont(new Font("Segoe Script", Font.BOLD, 20));
 		g.setColor(Color.white);

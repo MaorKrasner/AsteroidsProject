@@ -16,49 +16,61 @@ import java.util.Random;
 
 /**
  * This class represents the spaceship object in the game.
- ***/
+ */
+
 @Slf4j
 public class Spaceship extends Thread implements ActionListener, Hittable, Serializable
 {
-	int x,y;
-	private Timer timer;
+	private int x; // x coordinate of the spaceship
+
+	private int y; // y coordinate of the spaceship
+
+	private Timer timer; // timer to notify every fixed amount of time about event
+
 	private int counter = 0; // counter to know when to pop up an event of changing y direction
-	Game game;
+
+	private final Game game; // // instance of the game panel
+
 	@Getter
 	@Setter
 	public Polygon polygon; // polygon shape of the spaceship
-	int[] xAxios; // array of x values of the spaceship
-	int[] yAxios; // array of y values of the spaceship
-	private final SizeTypes size;
-	private final SpaceshipsMonitor spaceshipsMonitor;
-	private final int serialIndex;
-	
-	private static int spaceshipIndex = 0;
-	
-	public volatile boolean foundHit = false;
-	private volatile boolean isRunning = false;
 
-	private volatile boolean out = false;
-	
-	Random rnd = new Random();
-	
-	// variable to know who is the chosen value of y to move with
-	public int chosenDirY;
-	
-	// variable to know if the movement is forward or backwards
-	public int chosenDirX;
-	
-	Ball b;
-	
-	// variable to know when the thread is dead
-	public volatile boolean isDead = false;
-	
-	// variable to know when the thread is out of bounds
-	private volatile boolean isOutOfBounds = false;
+	int[] xAxios; // array to represent the x coordinates of the spaceship polygon
 
-	public volatile boolean isIterating = false;
+	int[] yAxios; // array to represent the y coordinates of the spaceship polygon
+
+	private final SizeTypes size; // the size of the spaceship
+
+	private final SpaceshipsMonitor spaceshipsMonitor; // the monitor that this specific spaceship is managed by
+
+	private final int serialIndex; // the serial index of this spaceship
 	
-	// constructor
+	private static int spaceshipIndex = 0; // static counter for the serial index of each spaceship
+	
+	public volatile boolean foundHit = false; // variable to know if the spaceship collided with another object
+
+	private volatile boolean isRunning = false; // variable to know whether the spaceship is running or not
+
+	Random rnd = new Random(); // random variable to generate values for the spaceship
+
+	@Getter
+	private int chosenDirY; 	// variable of the value of the movement in the y-axis
+
+	@Getter
+	private final int chosenDirX; // variable of the value of the movement in the y-axis
+	
+	private Ball b; // ball object to represent the ball that the spaceship shoots all the time
+
+	private volatile boolean isOutOfBounds = false; // variable to know when the spaceship is out of bounds
+
+	/***
+	 * constructor
+	 * @param x - starting x coordinate of the spaceship
+	 * @param y - starting y coordinate of the spaceship
+	 * @param size - the size of the spaceship
+	 * @param game - the game panel the spaceship is in
+	 * @param spaceshipsMonitor - the monitor this spaceship is managed by
+	 */
 	public Spaceship(int x, int y, SizeTypes size, Game game, SpaceshipsMonitor spaceshipsMonitor)
 	{
 		this.x = x;
@@ -73,8 +85,6 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		b = new Ball(); // garbage value initialization for the ball
 		chosenDirX = (x == -100) ? 1 : -1;
 		chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
-		
-		//log.info("CHOSEN STARTING Y VALUE IS : " + chosenDirY);
 	}
 
 	@Override
@@ -88,8 +98,10 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		}
 		return data.toString();
 	}
-	
-	// function to determine the values of the array
+
+	/***
+	 * function that builds the arrays of the axios according to the size of the spaceship
+	 */
 	private void initializeArraysValues()
 	{
 		switch (size) {
@@ -107,7 +119,11 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			}
 		}
 	}
-	
+
+	/***
+	 * funnction to find the index of this spaceship in the array list of spaceships in the game
+	 * @return - return the index in the list if the spaceship is found in the list, otherwise return -1.
+	 */
 	public int findIndexOfSpaceshipInArray()
 	{
 		for (int i = 0; i < game.spaceships.size(); i++)
@@ -115,8 +131,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			if (game.spaceships.get(i).isAlive() && game.spaceships.get(i) == this)
 				return i;
 		}
-		
-		// default case (MUST RIGHT DOWN BECAUSE THERE IS NO DEFAULT RETURNED VALUE)
+
 		return -1; 
 	}
 	
@@ -132,7 +147,9 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			// and spawn a new ball from the correct coordinates
 			if(counter == 2 && !foundHit)  
 			{
-				// determine the extra value for the spawn of the ball
+				/***
+				 * determine the extra value for the spawn of the ball
+				 */
 				int valueOfSpawn;
 				if (this.size == SizeTypes.BIG)
 					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_FIRST;
@@ -162,8 +179,12 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		}
 		else
 			timer.stop(); // stop when we need to
-	}	
-	
+	}
+
+	/***
+	 * draw the spaceship in the game panel
+	 * @param g - the graphics variable we draw in this spaceship
+	 */
 	public void drawSpaceship(Graphics g)
 	{
 		if (!foundHit) {
@@ -171,7 +192,10 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			g.drawPolygon(polygon);
 		}
 	}
-	
+
+	/***
+	 * function that add points to the score of the shooter according to the size of spaceship
+	 */
 	public void addPointsToShooter()
 	{
 		Player currentPlayer = game.players.get(game.getIndex());
@@ -191,22 +215,6 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	@Override
 	public void run()
 	{
-		/*
-		while (!Game.singlePlayerMode && !out) {
-			synchronized (this) {
-				if (Constants.GAME_INSTANCE_COUNTER < 2) {
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException ignored){}
-				}
-				else
-					out = true;
-			}
-		}
-
-		log.info("SPACESHIP - OUT");
-		*/
-
 		timer = new Timer(500, this);
 		timer.start();
 		
@@ -219,7 +227,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		
 		this.isRunning = true;
 
-		while (!isDead && !game.isGameFinished && !foundHit && !isOutOfBounds)
+		while (!game.isGameFinished && !foundHit && !isOutOfBounds)
 		{
 			synchronized (this) {
 				if (game.getIsGamePaused()) {
@@ -231,6 +239,8 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 
 			// add for each x and y of the spaceship the value of movement
 			polygon.translate(chosenDirX, chosenDirY);
+			x += chosenDirX;
+			y += chosenDirY;
 
 			// just a condition to let the spaceship have a time to get into the area
 			// and not just getting destroyed on the first second as it spawns

@@ -12,38 +12,45 @@ import java.io.Serializable;
 
 /**
  * this class represents the ball object in the game.
- ***/
+ */
 
 @Slf4j
 public class Ball extends Thread implements Hittable, Serializable
 {
 	@Getter
 	@Setter
-	private int x, y; // coordinates of the ball
+	private int x; // x coordinate of the ball
 
 	@Getter
 	@Setter
-	private int size;
+	private int y; // y coordinate of the ball
+
+	@Getter
+	@Setter
+	private int size; // size of the ball
 	
-	Game game;
+	private final Game game; // instance of the game panel
 	
 	public volatile boolean isFromSpaceship = false; // does the ball came from a spaceship
 	public volatile boolean isFromShooter = false; // does the ball came from the shooter
 	
-	public int indexFromSpaceship = -1; // index of the spaceship from the array
+	public int indexFromSpaceship = -1; // index of the spaceship that shot this ball
 
-	// variables to represent the starting point of the ball
-	private final int startX;
-	private final int startY;
+	private final int startX; // x coordinate of the starting location of the ball
+	private final int startY; // y coordinate of the starting location of the ball
 	
-	public volatile boolean foundHit = false; // if the ball hit an object
+	public volatile boolean foundHit = false; // variable to know whether the ball collided with another object or not
 
-	public volatile boolean isIterating = false; // variable to know if we iterate through this ball right now to handle ConcurrentModificationException
+	public volatile boolean isIterating = false; // variable to know if we iterate through this ball in the panel right now to prevent ConcurrentModificationException
 
-	private volatile boolean out = false;
+	public volatile Player whichPlayerShot; // player object variable to know from where the ball has came from
 
-	public volatile Player whichPlayerShooted;
-	
+	/***
+	 * constructor
+	 * @param x - starting x coordinate of the ball
+	 * @param y - starting y coordinate of the ball
+	 * @param game - game panel that the ball is in
+	 */
 	public Ball(int x, int y, Game game)
 	{
 		this.x = x;
@@ -54,7 +61,9 @@ public class Ball extends Thread implements Hittable, Serializable
 		this.game = game;
 	}
 
-	// just a default constructor to initialize the ball that is in the spaceship it won't throw errors
+	/***
+	 * just a default constructor to initialize the ball that is in the spaceship it won't throw errors
+	 */
 	public Ball()
 	{
 		this(-10, -10, null);
@@ -66,7 +75,10 @@ public class Ball extends Thread implements Hittable, Serializable
 		return this.x + "," + this.y + "--" + "\n";
 	}
 
-	// draw the ball
+	/***
+	 * function to draw the ball
+	 * @param g - graphics of the panel to draw with
+	 */
 	public void drawBall(Graphics g)
 	{
 		if (!foundHit) {
@@ -90,22 +102,6 @@ public class Ball extends Thread implements Hittable, Serializable
 		int temp = 0;
 		
 		boolean setTemp = false;
-
-		/*
-		while (!Game.singlePlayerMode && !out) {
-			synchronized (this) {
-				if (Constants.GAME_INSTANCE_COUNTER < 2) {
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException ignored){}
-				}
-				else
-					out = true;
-			}
-		}
-
-		log.info("BALL - OUT");
-		*/
 
 		while (!game.isGameFinished && (x < 1200 && x > 80 && y > 50 && y < 670) && !foundHit)
 		{
@@ -156,7 +152,7 @@ public class Ball extends Thread implements Hittable, Serializable
 							game.asteroids.get(i).addPointsToShooter();
 
 						game.asteroids.get(i).chooseSoundOfBang();
-						game.asteroids.get(i).isVisible = false;
+						game.asteroids.get(i).visible = false;
 						game.asteroids.get(i).setPolygon(new Polygon(new int[]{}, new int[]{}, 0)); // make the asteroid invisible
 						log.info("Ball killed by asteroid");
 					}
@@ -169,7 +165,7 @@ public class Ball extends Thread implements Hittable, Serializable
 				diry = 1;
 				if (indexFromSpaceship != -1)
 				{
-					dirx = game.spaceships.get(indexFromSpaceship).chosenDirX;
+					dirx = game.spaceships.get(indexFromSpaceship).getChosenDirX();
 					if (!setTemp)
 					{
 						temp = dirx;
@@ -186,10 +182,10 @@ public class Ball extends Thread implements Hittable, Serializable
 
 			else if (isFromShooter)
 			{
-				Polygon shp = whichPlayerShooted.getPolygon();
-				Point center = whichPlayerShooted.findCentroidOfTriangle();
+				Polygon shp = whichPlayerShot.getPolygon();
+				Point center = whichPlayerShot.findCentroidOfTriangle();
 
-				if (!whichPlayerShooted.getIsInSlope())
+				if (!whichPlayerShot.getIsInSlope())
 				{
 					// only if we didn't move, we can change the value of the direction
 					if (startX == x && startY == y)

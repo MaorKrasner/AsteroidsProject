@@ -1,6 +1,6 @@
 package krasner.maor.asteroids.game;
 
-import krasner.maor.asteroids.lastmulti.Client1;
+import krasner.maor.asteroids.multiplayer.Client;
 import krasner.maor.asteroids.objects.Asteroid;
 import krasner.maor.asteroids.objects.Ball;
 import krasner.maor.asteroids.objects.Player;
@@ -51,7 +51,7 @@ public class Game extends JPanel
 	//private GameServer socketServer;
 	//private static Server1 gameServer;
 
-	private Client1 gameClient;
+	private Client gameClient;
 
 	@Getter
 	private int index = 0;
@@ -193,7 +193,7 @@ public class Game extends JPanel
 	private void clientStart() {
 		if (!singlePlayerMode) {
 			try {
-				this.gameClient = new Client1();
+				this.gameClient = new Client();
 			} catch (IOException ignored) {}
 		}
 	}
@@ -294,7 +294,7 @@ public class Game extends JPanel
 		int[] arrY = new int[] {80, 450};
 		int xPosition = 0, yPosition = 0;
 				
-		for (int j = 0; j < 200; j++)
+		for (int j = 0; j < 1000; j++)
 		{
 			if (j % 4 == 0) {
 				xPosition = 0;
@@ -321,7 +321,7 @@ public class Game extends JPanel
 	
 	public void addSpaceshipsToGame()
 	{
-		for (int i = 0; i < 50; i++)
+		for (int i = 0; i < 200; i++)
 		{
 			Spaceship tmp;
 			if (i % 2 == 0) // if the index is even, set the spaceship from left to right

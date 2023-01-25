@@ -18,79 +18,78 @@ import java.util.LinkedList;
 
 /**
  * This class represents the spacecraft object that the player is playing with.
- ***/
+ */
 
 @Slf4j
 public class Player extends Thread implements Serializable, ActionListener
 {
-	public int x, y; // starting coordinate of the polygon
+	private int x; // x coordinate of the player
 
-	// first x and y coordinates
-	private final int startX;
-	private final int startY;
+	private int y; // y coordinate of the player
+
+	private final int startX; // starting x coordinate of the player
+	private final int startY; // starting y coordinate of the player
 	
-	public Game game;
+	private final Game game; // instance of the game panel
 
-	public Game.KeyboardListener controls;
-	
-	// arrays for representation of the coordinates shooter
-	private int[] arrx;
-	private int[] arry;
+	public Game.KeyboardListener controls; // key listener for the player
 
-	// polygons to represent the lives of the shooter
-	public Polygon[] arrLives = new Polygon[3];
+	private int[] arrx; // array to represent the x coordinates of the player polygon
+	private int[] arry; // array to represent the y coordinates of the player polygon
 
-	int[] xLivesArray; // array to represent the x of the shooter
-	int[] yLivesArray; // array to represent the y of the shooter
+	public Polygon[] arrLives = new Polygon[3]; // array of polygons to represent the lives of the player
+
+	int[] xLivesArray; // array to represent the x of the player
+	int[] yLivesArray; // array to represent the y of the player
 
 	@Getter
 	@Setter
-	public Polygon polygon; // shape of the shooter
+	public Polygon polygon; // polygon of the player
 	
-	public volatile boolean isDead = false; // is the shooter already dead or not
+	public volatile boolean isDead = false; // is the player already dead or not
 
 	@Getter
 	@Setter
 	private int lives = 3; // how many lives are left for the player
 
-
 	@Getter
 	@Setter
-	private int score = 0; // how many points the shooter scored
+	private int score = 0; // how many points the player scored
 	
 	private double angle = 0; // angle of rotation
 	
-	private double slope = 0.0; // variable to store the slope value between center point and "top" point
+	public volatile boolean visible = true; // variable to know whether the player is visible or not
 	
-	public volatile boolean visible = true; // variable to know if we need to represent the shooter or not
-	
-	public volatile boolean foundHit = false; // check if we found a hit
+	public volatile boolean foundHit = false; // variable to know whether the player collided with another object or not
 	
 	public volatile int direction = 0; // variable to know what is the direction the player is moving in
 	
-	private volatile boolean isInSlope = false; // variable to know when the shooter has a slope or not
-	
-	// variables to validate the respawn of the shooter is valid
-	private long startTime = 0;
-	private long currTime = 0;
+	private volatile boolean isInSlope = false; // variable to know when the player is positioned with a slope or not
 
-	private Timer t;
+	private volatile long startTime = 0; // variable to store the starting time when a player collided with another object
+
+	private volatile long currTime = 0; // variable to store the current time
+
+	private Timer t; // timer to notify every fixed amount of time about event
 
 	public volatile boolean connected; // variable to check if we are connected to the server
 
-	public volatile boolean canShoot = true;
+	public volatile boolean canShoot = true; // variable to know if the player can shoot or no (the player can shoot every 150 milliseconds)
 
-	public volatile boolean isIterating = false;
+	private int index; // index of the player according to its game panel
 
-	private volatile boolean out = false;
+	private volatile boolean transferred = false; // variable to know if we finished the process of transferring the player to its opposite edge
 
-	private int index;
+	private volatile boolean outOfBounds; // variable to know whether the player is out of bounds or in bounds
 
-	private volatile boolean transfered = false;
-
-	private volatile boolean outOfBounds;
-
-	// constructor
+	/***
+	 * constructor
+	 * @param x - starting x coordinate of the player
+	 * @param y - starting y coordinate of the player
+	 * @param game - the game panel the player is in
+	 * @param controls - the key listener the player gets updated with
+	 * @param panelIndex - the index of the panel that belongs to the player
+	 */
 	public Player(int x, int y, Game game, Game.KeyboardListener controls, int panelIndex)
 	{
 		this.x = x;
@@ -107,6 +106,12 @@ public class Player extends Thread implements Serializable, ActionListener
 		this.initializePolygonLives();
 	}
 
+	/***
+	 * another constructor
+	 * @param x - starting x coordinate of the player
+	 * @param y - starting y coordinate of the player
+	 * @param controls - the key listener the player gets updated with
+	 */
 	public Player(int x, int y, Game.KeyboardListener controls)
 	{
 		this.x = x;
@@ -122,7 +127,10 @@ public class Player extends Thread implements Serializable, ActionListener
 		this.initializePolygonLives();
 	}
 
-	// copy constructor
+	/***
+	 * copy constructor
+	 * @param player - the player we copy its data from
+	 */
 	public Player(Player player)
 	{
 		this.x = player.x;
@@ -138,7 +146,7 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	/***
 	 * initialize the array of lives
- 	 ***/
+ 	 */
 	public void initializePolygonLives()
 	{
 		int x = (Game.singlePlayerMode) ? 90 : 180, y = 15;
@@ -154,7 +162,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	/***
 	 * action listener so that the player can shoot a limited rounds per second.
 	 * @param e the event to be processed
-	 ***/
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		this.canShoot = true;
@@ -175,7 +183,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	/***
 	 * function to handle the keys that are pressed
 	 * @param keys - list of the keys to handle
-	 ***/
+	 */
 	private void manageControls(LinkedList<Integer> keys) throws ConcurrentModificationException {
 		if (this.visible && this.index == game.getIndex()) {
 			for (Integer key : keys) {
@@ -205,48 +213,71 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	public boolean getIsInSlope () { return isInSlope; }
 
-	// add bullet to the end of the list and run it
+	/***
+	 * add bullet to the list of balls in the game panel
+	 * we make this function here to make it easier to refer the player from which the ball came out
+	 */
 	public void addBulletToListForShooter()
 	{
 		Ball b = new Ball(this.getPolygon().xpoints[0],
 				this.getPolygon().ypoints[0], game);
 		b.isFromShooter = true;
-		b.whichPlayerShooted = this;
+		b.whichPlayerShot = this;
 		game.balls.add(b);
 		game.balls.get(game.balls.size() - 1).start();
 	}
 
+	/***
+	 * check if the x value of a certain point is in bounds
+	 * @param index - index that represent the x value of the point from the polygon we want to check from
+	 * @return - return true if the x value is in bounds, otherwise return false.
+	 * @throws ArrayIndexOutOfBoundsException
+	 */
 	private boolean checkXBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
 		return polygon.xpoints[index] > 0 && polygon.xpoints[index] < Constants.SCREEN_WIDTH;
 	}
 
+	/***
+	 * check if the y value of a certain point is in bounds
+	 * @param index - index that represent the y value of the point from the polygon we want to check from
+	 * @return - return true if the y value is in bounds, otherwise return false.
+	 * @throws ArrayIndexOutOfBoundsException
+	 */
 	private boolean checkYBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
 		return polygon.ypoints[index] > 0 && polygon.ypoints[index] < Constants.SCREEN_HEIGHT;
 	}
 
+	/***
+	 * check if a certain point from the polygon is in bounds
+	 * @param index - index that represent the ceratin point from the polygon that we want to check
+	 * @return - return true if the point is in bounds, otherwise return false.
+	 * @throws ArrayIndexOutOfBoundsException
+	 */
 	private boolean checkBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
 		return checkXBounds(index) && checkYBounds(index);
 	}
 
+	/***
+	 * move the player according to the commands from the key listener
+	 * @throws ArrayIndexOutOfBoundsException
+	 */
 	public void move() throws ArrayIndexOutOfBoundsException
 	{
 		Point center = findCentroidOfTriangle();
 		boolean isInBounds = checkBounds(0) || checkBounds(1) || checkBounds(2);
 
-		//System.out.println("x's : " +  Arrays.toString(polygon.xpoints));
-		//System.out.println("y's : " +  Arrays.toString(polygon.ypoints));
-
 		if (isInBounds)
 		{
-			this.transfered = false;
+			this.transferred = false;
+
 			/***
 			 * This condition means we need to move straight up/down/left/right
 			 * We check with absolute function because when we do the rotation there
 			 * might be some affect on the polygon in it's coordinates.
-			 ***/
+			 */
 			if (Math.abs(polygon.xpoints[0] - center.x) <= 1
 					|| Math.abs(polygon.ypoints[0] - center.y) <= 1)
 			{
@@ -278,16 +309,18 @@ public class Player extends Thread implements Serializable, ActionListener
 		}
 
 		else {
-			if (!this.transfered)
+			if (!this.transferred)
 				transferPlayer();
 		}
 	}
 
-	// move with the shooter according to the speed and the slope
+	/***
+	 * function that moves the shooter only when the shooter is positioned with a slope
+	 * @throws ArrayIndexOutOfBoundsException
+	 */
 	private void accelerate() throws ArrayIndexOutOfBoundsException
 	{
 		Point centerPt = findCentroidOfTriangle(); // center point calculation
-		this.slope = calculateSlope();
 
 		int speedX = (centerPt.x < polygon.xpoints[0]) ? 10 : -10;
 		int speedY = (centerPt.y > polygon.ypoints[0]) ? -10 : 10;
@@ -299,6 +332,11 @@ public class Player extends Thread implements Serializable, ActionListener
 		}
 	}
 
+	/***
+	 * find the value that we need to add/sub from each x/y coordinate
+	 * @param isOutOfWidth - is the polygon out of the sides of the screen
+	 * @return - return the max - min value of the x/y according to isOutOfWidth
+	 */
 	private int findValueForChange(boolean isOutOfWidth) {
 		// transfer left or right
 		if (isOutOfWidth) {
@@ -311,10 +349,14 @@ public class Player extends Thread implements Serializable, ActionListener
 				- Math.min(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]));
 	}
 
+	/***
+	 * transfer the player to the opposite edge of the screen
+	 */
 	private void transferPlayer() {
 		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
 		int toRemoveOrAdd = findValueForChange(isOutOfWidth);
 		int sign = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
+
 		int valueToTransfer = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + toRemoveOrAdd) * sign : (Constants.SCREEN_HEIGHT + toRemoveOrAdd) * sign;
 
 		for (int i = 0; i < polygon.npoints; i++) {
@@ -323,15 +365,23 @@ public class Player extends Thread implements Serializable, ActionListener
 			else
 				polygon.ypoints[i] += valueToTransfer;
 		}
-		this.transfered = true;
+		this.transferred = true;
 	}
 
+	/***
+	 * draw the player in the game panel
+	 * @param g - the graphics variable we draw in this player
+	 */
 	public void drawPlayer(Graphics g)
 	{
 		g.setColor(Color.WHITE);
 		g.drawPolygon(polygon);
 	}
 
+	/***
+	 * draw the lives left and the score of the player
+	 * @param g - the graphics variable we draw in this player
+	 */
 	public void drawLivesAndScore(Graphics g)
 	{
 		g.setColor(Color.WHITE);
@@ -356,25 +406,21 @@ public class Player extends Thread implements Serializable, ActionListener
 		else
 			g.drawString("Score of player number " + ind + ": " + this.score, 555, 25 + index * 30);
 	}
-	
-	// find the center point of a triangle
+
+	/***
+	 * function that finds the center point of the player polygon
+	 * @return - new point that represents the center of the player
+	 */
 	public final Point findCentroidOfTriangle()
 	{
 		int x = (polygon.xpoints[0] + polygon.xpoints[1] + polygon.xpoints[2]) / 3;
 		int y = (polygon.ypoints[0] + polygon.ypoints[1] + polygon.ypoints[2]) / 3;
 		return new Point(x, y);
 	}
-	
-	// calculate the slope of shooting
-	// by the formula : m = (y2 - y1) / (x2 - x1)
-	public final double calculateSlope()
-	{
-		Point center = findCentroidOfTriangle(); // find the center
-		Point top = new Point(polygon.xpoints[0], polygon.ypoints[0]); // get the "top" point
-		return (double)(center.y - top.y) / (center.x - top.x) + 5.0; // m = (y2 - y1)/(x2 - x1)
-	}
-	
-	// rotate each point of the polygon by the given value of the angle variable
+
+	/***
+	 * rotate each point of the polygon by the current angle value
+	 */
 	public void rotateByAcceleration() 
 	{
 		Point cent = findCentroidOfTriangle();
@@ -390,15 +436,26 @@ public class Player extends Thread implements Serializable, ActionListener
 		
 		isInSlope = Math.abs(polygon.xpoints[0] - findCentroidOfTriangle().x) > 1 && Math.abs(polygon.ypoints[0] - findCentroidOfTriangle().y) > 1;
 	}
-	
-	public void rotateRight() { angle = Math.PI / 4; }
-	    
-	public void rotateLeft () { angle = -Math.PI / 4; }
-	
-	// respawn the polygon
+
+	/***
+	 * rotate the player clockwise 45 degrees celsius
+	 */
+	public void rotateRight() {
+		angle = Math.PI / 4;
+	}
+
+	/***
+	 * rotate the player counterclockwise 45 degrees celsius
+	 */
+	public void rotateLeft () {
+		angle = -Math.PI / 4;
+	}
+
+	/***
+	 * respawn the player
+	 */
 	private void respawn()
 	{
-		// 600 , 330
 		this.x = startX;
 		this.y = startY;
 		arrx[0] = x;
@@ -409,44 +466,6 @@ public class Player extends Thread implements Serializable, ActionListener
 		arry[2] = y + 70;
 		polygon = new Polygon(arrx, arry, 3);
 		this.isInSlope = false;
-	}
-	
-	// calculate the distance between two points for shooter and asteroid
-	public int distanceWithAsteroid(Asteroid a)
-	{
-		double dist = Math.pow(polygon.xpoints[0] - a.getPolygon().xpoints[0], 2) - Math.pow(polygon.ypoints[0] - a.getPolygon().ypoints[0], 2);
-		return (int)(Math.sqrt(dist));
-	}
-	
-	// calculate the distance between two points for shooter and spaceship
-	public int distanceWithSpaceship(Spaceship s)
-	{
-		double dist = Math.pow(polygon.xpoints[0] - s.getPolygon().xpoints[0], 2) - Math.pow(polygon.ypoints[0] - s.getPolygon().ypoints[0], 2);
-		return (int)(Math.abs(Math.sqrt(dist)));
-	}
-	
-	// after the shooter dies for a couple of seconds, we check if his area
-	// is "clean" to continue to play. it means to check if there are
-	// no surrounding objects in a distance of 150 points value
-	public boolean isAreaSafe()
-	{
-		boolean foundWrong = false;
-		for (int i = 0; i < game.asteroids.size() && !foundWrong; i++)
-		{
-			if (this.distanceWithAsteroid(game.asteroids.get(i)) < 150)
-				foundWrong = true;
-		}
-		
-		if (!foundWrong)
-		{
-			for (int j = 0; j < game.spaceships.size() && !foundWrong; j++)
-			{
-				if (this.distanceWithSpaceship(game.spaceships.get(j)) < 150)
-					foundWrong = true;
-			}
-		}
-		
-		return !foundWrong; // the variable represents the opposite value of the answer
 	}
 
 	@Override
@@ -483,7 +502,7 @@ public class Player extends Thread implements Serializable, ActionListener
 							if (!game.isIterating) {
 								startTime = System.nanoTime(); // set a start time for the collision
 								this.visible = false;
-								game.asteroids.get(indAst).isVisible = false;
+								game.asteroids.get(indAst).visible = false;
 								game.asteroids.get(indAst).chooseSoundOfBang();
 								game.asteroids.remove(tmp);
 								lives--;

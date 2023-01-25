@@ -1,8 +1,8 @@
 package krasner.maor.asteroids.objects;
 
 /**
- * This is an enumerator to classify the types of asteroids in the game.
- ***/
+ * Enumerator to classify the types of asteroids in the game.
+ */
 public enum AsteroidType 
 {
 	CLOVER, // 11 points

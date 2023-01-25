@@ -1,8 +1,8 @@
 package krasner.maor.asteroids.objects;
 
 /**
- * This interface include 1 function that it's purpose is to choose the sound of explosion
- ***/
+ * Interface for all the game objects to implement a function that plays the audio
+ */
 public interface Hittable 
 {
 	void chooseSoundOfBang();

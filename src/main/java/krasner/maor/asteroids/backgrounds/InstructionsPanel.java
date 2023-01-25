@@ -7,19 +7,19 @@ import java.awt.*;
 
 public class InstructionsPanel extends JPanel
 {
-	private final Image img;
+	private final Image instructionsImage;
 	
 	public InstructionsPanel()
 	{
 		super();
 		ImageIcon ic = new ImageIcon("src/main/resources/images/asteroidsbackgif.gif");
-		img = ic.getImage();
+		instructionsImage = ic.getImage();
 		setSize(Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT);
 	}
 	
 	public void paintComponent(Graphics g) 
 	{ 
-		g.drawImage(img, 0, 0, 1280, 720, this); 
+		g.drawImage(instructionsImage, 0, 0, 1280, 720, this);
 		g.setFont(new Font("Segoe Script", Font.BOLD, 25));
 		g.setColor(Color.white);
 		g.drawString("You are the shooter, the player.", 150, 100);

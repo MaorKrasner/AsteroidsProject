@@ -7,7 +7,8 @@ import java.awt.*;
 
 public class GameFrame extends JFrame
 {
-	private Game game;
+	private final Game game;
+
 	public GameFrame()
 	{
 		super("Asteroids - Live Game");

@@ -19,6 +19,7 @@ public class ChooseWhatToPlayFrame extends JFrame {
         multiplayer.setVisible(true);
         Rectangle r1 = new Rectangle(240, 400, 250, 100);
         Rectangle r2 = new Rectangle(840, 400, 250, 100);
+
         singlePlayer.setBounds(r1);
         singlePlayer.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
@@ -31,6 +32,7 @@ public class ChooseWhatToPlayFrame extends JFrame {
                 new GameFrame();
             }
         });
+
         multiplayer.setBounds(r2);
         multiplayer.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {

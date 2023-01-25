@@ -9,17 +9,17 @@ import java.awt.event.MouseEvent;
 
 public class CreditsFrame extends JFrame
 {
-	private JLabel rtrnToMainMenu;
-	private CreditsPanel cp;
+	private final JLabel returnToMainMenu;
+	private final CreditsPanel creditsPanel;
 	
 	public CreditsFrame()
 	{
 		super("Asteroids - Credits");
-		rtrnToMainMenu = new JLabel();
-		rtrnToMainMenu.setVisible(true);
+		returnToMainMenu = new JLabel();
+		returnToMainMenu.setVisible(true);
 		Rectangle r = new Rectangle(540, 400, 250, 100);
-		rtrnToMainMenu.setBounds(r);
-		rtrnToMainMenu.addMouseListener(new MouseAdapter() {
+		returnToMainMenu.setBounds(r);
+		returnToMainMenu.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
 				// sleep just a little bit for smoothness
 				try {
@@ -29,10 +29,10 @@ public class CreditsFrame extends JFrame
 				new StartingGameFrame();
 			}
 		});
-		add(rtrnToMainMenu);
+		add(returnToMainMenu);
 		
-		cp = new CreditsPanel();
-		add(cp);
+		creditsPanel = new CreditsPanel();
+		add(creditsPanel);
 		
 		setVisible(true);
 		setSize(Constants.SCREEN_WIDTH, Constants.SCREEN_HEIGHT);

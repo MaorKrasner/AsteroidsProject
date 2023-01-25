@@ -10,13 +10,10 @@ public class StartingGameFrame extends JFrame {
     public StartingGameFrame() {
         super("Asteroids - Main Menu");
 
-        /***
-         *  PLAY BUTTON
-         ***/
-        JLabel playBtn = new JLabel(); // NO TEXT SO WE WILL ONLY SEE CLEAR PLAY BUTTON
-        playBtn.setBounds(595, 522, 110, 60);
-        playBtn.setVisible(true); // ALWAYS set labels to be visible so we can actually "press them"
-        playBtn.addMouseListener(new MouseAdapter() {
+        JLabel playButton = new JLabel(); // play button (there is  no text so we will only see clear real play button)
+        playButton.setBounds(595, 522, 110, 60);
+        playButton.setVisible(true); // ALWAYS set labels to be visible so we can actually "press them"
+        playButton.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 // sleep just a little bit for smoothness
                 try {
@@ -27,45 +24,43 @@ public class StartingGameFrame extends JFrame {
                 new ChooseWhatToPlayFrame();
             }
         });
-        add(playBtn);
+        add(playButton);
 
         /***
          * INSTRUCTIONS BUTTON
-         ***/
-        JLabel instBtn = new JLabel();
-        instBtn.setBounds(137, 522, 301, 60);
-        instBtn.setVisible(true);
-        instBtn.addMouseListener(new MouseAdapter() {
+         */
+        JLabel instructionsButton = new JLabel();
+        instructionsButton.setBounds(137, 522, 301, 60);
+        instructionsButton.setVisible(true);
+        instructionsButton.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 // sleep just a little bit for smoothness
                 try {
                     Thread.sleep(100);
-                } catch (InterruptedException ignored) {
-                }
+                } catch (InterruptedException ignored) {}
                 dispose(); // destroy current frame
                 new InstructionsFrame(); // make a new frame for the instructions page
             }
         });
-        add(instBtn);
+        add(instructionsButton);
 
         /***
          * CREDITS BUTTON
-         ***/
-        JLabel credBtn = new JLabel();
-        credBtn.setBounds(723, 522, 508, 60);
-        credBtn.setVisible(true);
-        credBtn.addMouseListener(new MouseAdapter() {
+         */
+        JLabel creditsButton = new JLabel();
+        creditsButton.setBounds(723, 522, 508, 60);
+        creditsButton.setVisible(true);
+        creditsButton.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 // sleep just a little bit for smoothness
                 try {
                     Thread.sleep(100);
-                } catch (InterruptedException ignored) {
-                }
+                } catch (InterruptedException ignored) {}
                 dispose(); // destroy current frame
                 new CreditsFrame(); // make a new frame for the instructions page
             }
         });
-        add(credBtn);
+        add(creditsButton);
 
         add(new StartingGamePanel());
         setVisible(true);

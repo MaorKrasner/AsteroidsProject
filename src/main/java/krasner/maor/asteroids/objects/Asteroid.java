@@ -16,64 +16,59 @@ import java.util.Random;
 
 /**
  * This class represents the asteroid object in the game.
- ***/
+ */
 @Slf4j
 public class Asteroid extends Thread implements Hittable, ActionListener, Serializable
 {
-	private Game game;
+	private final Game game; // instance of the game panel
 
-	Random rnd = new Random();
+	Random rnd = new Random(); // object to generate random values
 
-	private int x;
-	private int y;
+	private int x; // x coordinate of the asteroid
+	private int y; // y coordinate of the asteroid
 
-	private final int startX;
-	private final int startY;
+	private final int startX; // the x coordinate value of the start location
+	private final int startY; // the y coordinate value of the start location
 
-	private int chosenDirX, chosenDirY;
+	private final int chosenDirX; // value of the direction of movement of the asteroid in x-axis
+	private int chosenDirY; // value of the direction of movement of the asteroid in y-axis
 
-	private Timer t;
+	private Timer t; // timer to notify every fixed amount of time about event
 
-	private SizeTypes sizeTypes; // variable to know what is the size
-	private AsteroidType type; // variable to know the type
+	private final SizeTypes sizeTypes; // the size of the asteroid
+	private final AsteroidType type; // the type of the asteroid
 
-	private AsteroidsMonitor asteroidsMonitor; // monitor to synchronize the asteroids
-
-	private String name = "";
+	private final AsteroidsMonitor asteroidsMonitor; // monitor to synchronize the asteroids
 
 	@Getter
 	@Setter
 	private Polygon polygon;
 
-	// 2 arrays to represent the asteroid points
-	private int[] xAxios;
-	private int[] yAxios;
+	private int[] xAxios; // array to represent the x coordinates of the asteroid polygon
+	private int[] yAxios; // array to represent the y coordinates of the asteroid polygon
 
-	public volatile boolean isDead = false;
+	public volatile boolean foundHit = false; // variable to know if the asteroid collided with another object
 
-	public Asteroid[] astChildren; // children of the asteroid
+	private volatile boolean isOutOfBounds = false; // variable to know when the asteroid is out of bounds
 
-	public Asteroid father;
+	private volatile boolean isRunningOnScreen = false; // variable to know whether the asteroid is running or not
 
-	public volatile boolean foundHit = false; // check if we found a hit
+	public volatile boolean visible = true; // variable to know if the asteroid is visible
 
-	// variable to know when the thread is out of bounds
-	private volatile boolean isOutOfBounds = false;
+	private final int serialIndex; // the index of the asteroid in the game
 
-	// variable to know when the asteroid is running as a thread
-	private volatile boolean isRunningOnScreen = false;
+	private static int asteroidIndex = 0; // static counter to set the serial index of the asteroid
 
-	public volatile boolean isVisible = true;
 
-	public volatile boolean isIterating = false;
-
-	private int serialIndex;
-
-	private static int asteroidIndex = 0;
-
-	private volatile boolean out = false;
-
-	// constructor
+	/***
+	 * constructor
+	 * @param x - starting x coordinate of the asteroid
+	 * @param y - starting y coordinate of the asteroid
+	 * @param size - size of the asteroid
+	 * @param type - type of the asteroid
+	 * @param game - game panel that the asteroid is in
+	 * @param asteroidsMonitor - monitor that the asteroid is managed by
+	 */
 	public Asteroid(int x, int y, SizeTypes size, AsteroidType type, Game game, AsteroidsMonitor asteroidsMonitor)
 	{
 		this.x = x;
@@ -86,11 +81,9 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		this.type = type;
 		this.game = game;
 		this.asteroidsMonitor = asteroidsMonitor;
-		this.name = "Asteroid" + Constants.IND_COUNTER++;
 		this.serialIndex = asteroidIndex++;
 		initializeArrays();
 		this.polygon = new Polygon(xAxios, yAxios, xAxios.length);
-		this.astChildren = new Asteroid[2];
 	}
 
 	@Override
@@ -113,20 +106,11 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 			chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
 	}
 
-	// get the serial number of the asteroid thread
-	public int getAsteroidNumber()
-	{
-		String stringSubAstNum = name.substring(8); // thread number
-		String orString = name.replace("Asteroid","");
-		return Integer.parseInt(stringSubAstNum);
-	}
-
-	public SizeTypes getSize() { return sizeTypes; }
-
-	public AsteroidType getType() { return type; }
-
 	public boolean getIsRunningOnScreen() { return isRunningOnScreen; }
 
+	/***
+	 * function that add points to the score of the shooter according to the size of asteroid
+	 */
 	public void addPointsToShooter()
 	{
 		Player currentPlayer = game.players.get(game.getIndex());
@@ -137,6 +121,10 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		}
 	}
 
+	/***
+	 * draw the asteroid in the game panel
+	 * @param g - the graphics variable we draw in this asteroid
+	 */
 	public void drawAsteroid(Graphics g)
 	{
 		if (!foundHit) {
@@ -146,7 +134,7 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	}
 
 	/***
-	 * function that determines the values of the arrays for big size, medium size and small size
+	 * function that builds the arrays of the axios according to the size and type of the asteroid
  	 */
 	private void initializeArrays()
 	{
@@ -203,9 +191,6 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		}
 	}
 
-	/***
-	 * play an audio according to the size of the asteroid
- 	 */
 	@Override
 	public void chooseSoundOfBang()
 	{
@@ -218,6 +203,10 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		AudioUtil.playAudio("src/main/resources/sounds/" + toDisplay);
 	}
 
+	/***
+	 * function that checks if the asteroid is out of bounds or not
+	 * @return - return true if the asteroid is out of bounds, otherwise return false.
+	 */
 	private boolean isAsteroidOutOfBounds()
 	{
 		for (int i = 0; i < polygon.npoints; i++)
@@ -229,40 +218,13 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		return false;
 	}
 
-	private boolean isAsteroidInBounds()
-	{
-		for (int i = 0; i < polygon.npoints; i++)
-		{
-			if (polygon.xpoints[i] > 70 && polygon.xpoints[i] < 1210 && polygon.ypoints[i] > 70 && polygon.ypoints[i] < 650)
-				return true;
-		}
-		return false;
-	}
-
-
 	public void run()
 	{
-		/*
-		while (!Game.singlePlayerMode && !out) {
-			synchronized (this) {
-				if (Constants.GAME_INSTANCE_COUNTER < 2) {
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException ignored){}
-				}
-				else
-					out = true;
-			}
-		}
-
-		log.info("ASTEROID - OUT");
-		*/
-
 		asteroidsMonitor.waitForMyTurn(this.serialIndex); // start the task of the thread
 
-		// sleep for 0.2 seconds as a starting barrier
+		// sleep for 0.6 seconds as a starting barrier
 		try{
-			Thread.sleep(200);
+			Thread.sleep(600);
 		}catch(InterruptedException e) {
 			log.info(String.valueOf(e));
 		}
@@ -299,7 +261,7 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 			}
 
 			else
-				log.info("Asteroid " + getAsteroidNumber() + " is dead");
+				log.info("Asteroid " + this.serialIndex + " is dead");
 		}
 
 		asteroidsMonitor.imDone(this.serialIndex); // finish the task of the thread
