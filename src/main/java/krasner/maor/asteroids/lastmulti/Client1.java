@@ -1,11 +1,15 @@
 package krasner.maor.asteroids.lastmulti;
 
+import krasner.maor.asteroids.objects.Asteroid;
+import krasner.maor.asteroids.objects.Ball;
+import krasner.maor.asteroids.objects.Spaceship;
 import krasner.maor.asteroids.util.Constants;
 import lombok.Getter;
 
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Client1 extends Thread {
     @Getter
@@ -20,6 +24,9 @@ public class Client1 extends Thread {
     ObjectOutputStream objectOutputStream;
 
     public Polygon p1, p2;
+    public ArrayList<Asteroid> asteroids1, asteroids2;
+    public ArrayList<Spaceship> spaceships1, spaceships2;
+    public ArrayList<Ball> balls1, balls2;
 
     @Getter
     public Thread t;
@@ -30,6 +37,15 @@ public class Client1 extends Thread {
         this.p2 = new Polygon();
         p2.addPoint(500, 500);
 
+        this.asteroids1 = new ArrayList<>();
+        this.asteroids2 = new ArrayList<>();
+
+        this.spaceships1 = new ArrayList<>();
+        this.spaceships2 = new ArrayList<>();
+
+        this.balls1 = new ArrayList<>();
+        this.balls2 = new ArrayList<>();
+
         t = new Thread(this);
         connectToServer(Constants.PORT);
     }
@@ -37,8 +53,19 @@ public class Client1 extends Thread {
     public Client1() throws IOException {
         this.p1 = new Polygon();
         p1.addPoint(500, 500);
+
         this.p2 = new Polygon();
         p2.addPoint(500, 500);
+
+        this.asteroids1 = new ArrayList<>();
+        this.asteroids2 = new ArrayList<>();
+
+        this.spaceships1 = new ArrayList<>();
+        this.spaceships2 = new ArrayList<>();
+
+        this.balls1 = new ArrayList<>();
+        this.balls2 = new ArrayList<>();
+
         t = new Thread(this);
         connectToServer(Constants.PORT);
     }
@@ -67,6 +94,9 @@ public class Client1 extends Thread {
                     p.addPoint(this.p1.xpoints[i], this.p1.ypoints[i]);
                 }
                 data1 = new PlayerData(p);
+                //data1.asteroids = asteroids1;
+                //data1.spaceships = spaceships1;
+                //data1.balls = balls1;
                 objectOutputStream.writeObject(data1);
 
                 data2 = (PlayerData) objectInputStream.readObject();
@@ -76,6 +106,10 @@ public class Client1 extends Thread {
                 {
                     this.p2.addPoint(data2.playerPolygon.xpoints[i], data2.playerPolygon.ypoints[i]);
                 }
+
+                //this.asteroids2 = data2.asteroids;
+                //this.spaceships2 = data2.spaceships;
+                //this.balls2 = data2.balls;
 
             } catch (IOException e) {
                 try {
@@ -92,69 +126,6 @@ public class Client1 extends Thread {
             try {
                 Thread.sleep(2);
             } catch (InterruptedException ignored){}
-
-            /*
-            try {
-                Polygon p = d1.getPlayerPolygon();
-                int lives = d1.getLivesLeft();
-                data1 = new PlayerData(p, lives);
-
-                //System.out.println("data 1 polygon x's : " + Arrays.toString(data1.getPlayerPolygon().xpoints));
-                //System.out.println("data 1 polygon y's : " + Arrays.toString(data1.getPlayerPolygon().ypoints));
-
-                String info = "";
-                for (int i = 0; i < p.npoints; i++)
-                {
-                    info += p.xpoints[i];
-                    info += " ";
-                    info += p.ypoints[i];
-                    info += " ";
-                }
-                info += lives;
-
-                objectOutputStream.writeObject(info);
-
-                String strdata2 = (String) objectInputStream.readObject();
-                //data2 = (PlayerData) objectInputStream.readObject();
-
-                this.d2.playerPolygon = new Polygon();
-                String[] data_list = strdata2.split(" ");
-                for (int i = 0; i < data_list.length / 2 - 1; i++)
-                {
-                    this.d2.playerPolygon.addPoint(Integer.parseInt(data_list[i]), Integer.parseInt(data_list[i + 1]));
-                }
-                //this.d2.playerPolygon = strdata2.playerPolygon;
-                this.d2.livesLeft = Integer.parseInt(data_list[data_list.length - 1]);
-                //this.d2.setPlayerPolygon(data2.getPlayerPolygon());
-                //this.d2.setLivesLeft(data2.getLivesLeft());
-
-                System.out.println("data 2 polygon x's : " + Arrays.toString(this.d2.playerPolygon.xpoints));
-                System.out.println("data 2 polygon y's : " + Arrays.toString(this.d2.playerPolygon.ypoints));
-
-            } catch (IOException e) {
-                try {
-                    socket.close();
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e1) {
-                    // TODO Auto-generated catch block
-                    e1.printStackTrace();
-                }
-                System.exit(0);
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-            try {
-                Thread.sleep(2);
-            } catch (InterruptedException ignored){}
-            */
         }
     }
 }

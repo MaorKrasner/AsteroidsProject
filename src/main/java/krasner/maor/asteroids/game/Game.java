@@ -78,8 +78,6 @@ public class Game extends JPanel
 		keyboard = new KeyboardListener();
 		this.addKeyListener(keyboard);
 
-		//start();
-
 		initializeGameObjects();
 
 		clientStart();
@@ -102,10 +100,6 @@ public class Game extends JPanel
 
 		// thread to activate the game objects in case we are in multiplayer mode
 		if (!singlePlayerMode) {
-			//new Thread(() -> {
-			//	while (Server1.ClientCounter < 2) {}
-			//}).start();
-
 			Object obj;
 			try {
 				obj = gameClient.getObjectInputStream().readObject();
@@ -125,39 +119,29 @@ public class Game extends JPanel
 			activateGameObjects();
 		}
 
-		// Thread to update every 1 milliseconds the other player
-		// AKA the main thread of the panel
+		// Thread to update every 1 milliseconds the other player. This is the main thread of the panel
 		new Thread(() -> {
 			if (!singlePlayerMode) {
 				while (true) { // PROBLEM HERE, MUST FIX THE WHILE TRUE
-
-					// MUST SEND TO THE SERVER OUR CURRENT POSITION
-					//log.info("current polygon for player number " + index + " is : "
-							//+ Arrays.toString(players.get(index).polygon.xpoints) + "," + Arrays.toString(players.get(index).polygon.ypoints));
-					//log.info("player data inserted : " + Arrays.toString(pd.getPlayerPolygon().xpoints) + "," + Arrays.toString(pd.getPlayerPolygon().ypoints));
 					gameClient.p1 = players.get(index).polygon;
+					//gameClient.asteroids1 = asteroids;
+					//gameClient.spaceships1 = spaceships;
+					//gameClient.balls1 = balls;
 
 					int indexOfOther = 1 - index; // find the opposite player
-					//players.get(indexOfOther).polygon = gameClient.d2.playerPolygon; // PROBLEM, NOT GETTING ANY UPDATES
+
 					players.get(indexOfOther).polygon = new Polygon();
 					for (int i = 0; i < gameClient.p2.npoints; i++)
 					{
 						players.get(indexOfOther).polygon.addPoint(gameClient.p2.xpoints[i], gameClient.p2.ypoints[i]);
 					}
-					//players.get(indexOfOther).polygon.xpoints = gameClient.getD2().getPlayerPolygon().xpoints;
-					//players.get(indexOfOther).polygon.ypoints = gameClient.getD2().getPlayerPolygon().ypoints;
 
-					/*
-					players.get(indexOfOther).polygon = new Polygon();
-					Polygon toUpdate = gameClient.getD2().getPlayerPolygon();
-					for (int k = 0; k < toUpdate.npoints; k++)
-					{
-						players.get(indexOfOther).polygon.addPoint(toUpdate.xpoints[k], toUpdate.ypoints[k]);
+					if (this.index == 1) {
+						//this.asteroids = gameClient.asteroids2;
+						//this.spaceships = gameClient.spaceships2;
+						//this.balls = gameClient.balls2;
 					}
-					*/
 
-					//log.info("changed polygon of player " + indexOfOther + " to : " +
-							//Arrays.toString(players.get(indexOfOther).polygon.xpoints) + "," + Arrays.toString(players.get(indexOfOther).polygon.ypoints));
 					try {
 						Thread.sleep(1);
 					} catch (InterruptedException ignored){}
@@ -219,9 +203,6 @@ public class Game extends JPanel
 			// create for every game panel instance it's own client.
 			Polygon currentPlayer = this.players.get(this.index).polygon;
 			gameClient.p1 = currentPlayer;
-			//log.info("GAME DATA FOR PLAYER  : " + index +
-			//		Arrays.toString(currentData.getPlayerPolygon().xpoints)
-			//	+ "," + Arrays.toString(currentData.getPlayerPolygon().ypoints) + "," + currentData.getLivesLeft());
 		}
 	}
 
@@ -357,7 +338,7 @@ public class Game extends JPanel
 			if (!players.isEmpty()) {
 				synchronized (players) {
 					for (Player player : players) {
-						if (player.isAlive() && player.isVisible)
+						if (player.isAlive() && player.visible)
 							player.drawPlayer(g);
 						player.drawLivesAndScore(g);
 						drawTotalScore(g);

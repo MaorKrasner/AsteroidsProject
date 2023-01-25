@@ -21,8 +21,7 @@ import java.util.LinkedList;
  ***/
 
 @Slf4j
-public class Player extends Thread
-		implements Serializable, ActionListener
+public class Player extends Thread implements Serializable, ActionListener
 {
 	public int x, y; // starting coordinate of the polygon
 
@@ -63,7 +62,7 @@ public class Player extends Thread
 	
 	private double slope = 0.0; // variable to store the slope value between center point and "top" point
 	
-	public volatile boolean isVisible = true; // variable to know if we need to represent the shooter or not
+	public volatile boolean visible = true; // variable to know if we need to represent the shooter or not
 	
 	public volatile boolean foundHit = false; // check if we found a hit
 	
@@ -176,7 +175,7 @@ public class Player extends Thread
 	 * @param keys - list of the keys to handle
 	 ***/
 	private void manageControls(LinkedList<Integer> keys) throws ConcurrentModificationException {
-		if (this.isVisible && this.index == game.getIndex()) {
+		if (this.visible && this.index == game.getIndex()) {
 			for (Integer key : keys) {
 				switch (key) {
 					case KeyEvent.VK_UP, KeyEvent.VK_W, KeyEvent.VK_DOWN, KeyEvent.VK_S -> {
@@ -451,22 +450,6 @@ public class Player extends Thread
 	@Override
 	public void run()
 	{
-		/*
-		while (!Game.singlePlayerMode && !out) {
-			synchronized (this) {
-				if (Constants.GAME_INSTANCE_COUNTER < 2) {
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException ignored){}
-				}
-				else
-					out = true;
-			}
-		}
-
-		log.info("PLAYER - OUT");
-		*/
-
 		t = new Timer(200, this);
 		t.start();
 
@@ -480,74 +463,78 @@ public class Player extends Thread
 				}
 			}
 
-			manageControls(controls.pressedKeys);
-
-			// check for all asteroids
-			for (int indAst = 0; indAst < game.asteroids.size() && !foundHit; indAst++)
+			// only if the player is visible, we can check if it makes collision
+			if (this.visible)
 			{
-				if (!foundHit)
+				manageControls(controls.pressedKeys);
+
+				// check for all asteroids
+				for (int indAst = 0; indAst < game.asteroids.size() && !this.foundHit; indAst++)
 				{
-					Asteroid tmp = game.asteroids.get(indAst);
-					if (tmp.isAlive() && Hits.isShooterHittingAsteroid(this, tmp))
+					if (!foundHit)
 					{
-						if (!game.isIterating) {
-							startTime = System.nanoTime(); // set a start time for the collision
-							this.isVisible = false;
-							game.asteroids.get(indAst).isVisible = false;
-							game.asteroids.get(indAst).chooseSoundOfBang();
-							game.asteroids.remove(tmp);
-							lives--;
-							foundHit = true;
-							log.info("Player got hit by asteroid");
+						Asteroid tmp = game.asteroids.get(indAst);
+						if (tmp.isAlive() && Hits.isShooterHittingAsteroid(this, tmp))
+						{
+							if (!game.isIterating) {
+								startTime = System.nanoTime(); // set a start time for the collision
+								this.visible = false;
+								game.asteroids.get(indAst).isVisible = false;
+								game.asteroids.get(indAst).chooseSoundOfBang();
+								game.asteroids.remove(tmp);
+								lives--;
+								foundHit = true;
+								log.info("Player got hit by asteroid");
+							}
 						}
 					}
 				}
-			}
 
-			// check for all spaceships
-			for (int indSpace = 0; indSpace < game.spaceships.size() && !foundHit; indSpace++)
-			{
-				if (game.spaceships.get(indSpace).getPolygon().npoints > 0
-					&& !foundHit && game.spaceships.get(indSpace).getPolygon().xpoints[2] > 150
-						&& game.spaceships.get(indSpace).getPolygon().xpoints[7] < 1150)
+				// check for all spaceships
+				for (int indSpace = 0; indSpace < game.spaceships.size() && !this.foundHit; indSpace++)
 				{
-					if (Hits.isSpaceshipHittingShooter(game.spaceships.get(indSpace), this))
+					if (game.spaceships.get(indSpace).getPolygon().npoints > 0
+							&& !foundHit && game.spaceships.get(indSpace).getPolygon().xpoints[2] > 150
+							&& game.spaceships.get(indSpace).getPolygon().xpoints[7] < 1150)
+					{
+						if (Hits.isSpaceshipHittingShooter(game.spaceships.get(indSpace), this))
+						{
+							if (!game.isIterating) {
+								foundHit = true;
+								game.spaceships.get(indSpace).foundHit = true;
+								game.spaceships.get(indSpace).chooseSoundOfBang();
+								game.spaceships.remove(indSpace);
+								startTime = System.nanoTime(); // set a start time for the collision
+								this.visible = false;
+								this.lives--;
+								log.info("Player got hit by spaceship");
+							}
+						}
+					}
+				}
+
+				// check for all bullets
+				for (int indBall = 0; indBall < game.balls.size() && !this.foundHit; indBall++)
+				{
+					if (game.balls.get(indBall).isFromSpaceship && game.balls.get(indBall).isAlive() &&
+							Hits.isShooterHittingBall(game.balls.get(indBall), this))
 					{
 						if (!game.isIterating) {
+							this.visible = false;
 							foundHit = true;
-							game.spaceships.get(indSpace).foundHit = true;
-							game.spaceships.get(indSpace).chooseSoundOfBang();
-							game.spaceships.remove(indSpace);
 							startTime = System.nanoTime(); // set a start time for the collision
-							this.isVisible = false;
+
+							game.balls.get(indBall).setSize(Constants.DEAD_BALL_SIZE);
+							game.balls.get(indBall).chooseSoundOfBang();
+
 							this.lives--;
-							log.info("Player got hit by spaceship");
+							log.info("player got hit by ball");
 						}
 					}
 				}
 			}
 
-			// check for all bullets
-			for (int indBall = 0; indBall < game.balls.size() && !foundHit; indBall++)
-			{
-				if (game.balls.get(indBall).isFromSpaceship && game.balls.get(indBall).isAlive() &&
-						Hits.isShooterHittingBall(game.balls.get(indBall), this))
-				{
-					if (!game.isIterating) {
-						this.isVisible = false;
-						foundHit = true;
-						startTime = System.nanoTime(); // set a start time for the collision
-
-						game.balls.get(indBall).setSize(Constants.DEAD_BALL_SIZE);
-						game.balls.get(indBall).chooseSoundOfBang();
-
-						this.lives--;
-						log.info("player got hit by ball");
-					}
-				}
-			}
-
-			if (foundHit || !isVisible)
+			if (this.foundHit || !this.visible)
 			{
 				currTime = System.nanoTime(); // get the current time
 
@@ -560,7 +547,7 @@ public class Player extends Thread
 
 					// give back the original values to this variables
 					this.foundHit = false;
-					this.isVisible = true;
+					this.visible = true;
 
 					// respawn the shooter
 					this.respawn();
@@ -568,7 +555,7 @@ public class Player extends Thread
 			}
 
 			if (this.lives > 0) {
-				if (this.isVisible) {
+				if (this.visible) {
 					try {
 						Thread.sleep(60);
 					}catch(InterruptedException e) {}
