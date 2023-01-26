@@ -39,7 +39,7 @@ public class Ball extends Thread implements Hittable, Serializable
 	private final int startX; // x coordinate of the starting location of the ball
 	private final int startY; // y coordinate of the starting location of the ball
 	
-	public volatile boolean foundHit = false; // variable to know whether the ball collided with another object or not
+	public volatile boolean collided = false; // variable to know whether the ball collided with another object or not
 
 	public volatile boolean isIterating = false; // variable to know if we iterate through this ball in the panel right now to prevent ConcurrentModificationException
 
@@ -81,7 +81,7 @@ public class Ball extends Thread implements Hittable, Serializable
 	 */
 	public void drawBall(Graphics g)
 	{
-		if (!foundHit) {
+		if (!collided) {
 			g.setColor(Color.WHITE);
 			g.fillOval(x, y, size, size);
 		}
@@ -91,6 +91,15 @@ public class Ball extends Thread implements Hittable, Serializable
 	public void chooseSoundOfBang() 
 	{
 		AudioUtil.playAudio("src/main/resources/sounds/Explosionball.wav");
+	}
+
+	/***
+	 * function to check if the ball is still in the area of the screen
+	 * @return - return true if the ball didn't pass the edges of the screen, otherwise return false.
+	 */
+	private boolean isBallOutOfBounds()
+	{
+		return x < 0 || x > Constants.SCREEN_WIDTH || y < 0 || y > Constants.SCREEN_HEIGHT;
 	}
 	
 	public void run()
@@ -103,7 +112,7 @@ public class Ball extends Thread implements Hittable, Serializable
 		
 		boolean setTemp = false;
 
-		while (!game.isGameFinished && (x < 1200 && x > 80 && y > 50 && y < 670) && !foundHit)
+		while (!game.isGameFinished && !isBallOutOfBounds() && !collided)
 		{
 			synchronized (this) {
 				if (game.getIsGamePaused()) {
@@ -114,7 +123,7 @@ public class Ball extends Thread implements Hittable, Serializable
 			}
 
 			// check for all spaceships
-			for (int i = 0; i < game.spaceships.size() && !foundHit; i++)
+			for (int i = 0; i < game.spaceships.size() && !collided; i++)
 			{
 				if (game.spaceships.get(i).getPolygon().npoints > 0
 						&& game.spaceships.get(i).getPolygon().xpoints[2] > 150
@@ -123,10 +132,10 @@ public class Ball extends Thread implements Hittable, Serializable
 					if (Hits.isBallHittingSpaceship(this, game.spaceships.get(i)))
 					{
 						if (!game.isIterating) {
-							foundHit = true;
+							collided = true;
 							this.size = Constants.DEAD_BALL_SIZE;
 
-							game.spaceships.get(i).foundHit = true;
+							game.spaceships.get(i).collided = true;
 							if (isFromShooter)
 								game.spaceships.get(i).addPointsToShooter();
 							game.spaceships.get(i).chooseSoundOfBang();
@@ -139,15 +148,15 @@ public class Ball extends Thread implements Hittable, Serializable
 			}
 
 			// check for all asteroids
-			for (int i = 0; i < game.asteroids.size() && !foundHit; i++)
+			for (int i = 0; i < game.asteroids.size() && !collided; i++)
 			{
 				if (Hits.isBallHittingAsteroid(this, game.asteroids.get(i)))
 				{
 					if (!game.isIterating) {
-						foundHit = true;
+						collided = true;
 						this.size = Constants.DEAD_BALL_SIZE;
 
-						game.asteroids.get(i).foundHit = true;
+						game.asteroids.get(i).collided = true;
 						if (isFromShooter)
 							game.asteroids.get(i).addPointsToShooter();
 

@@ -44,7 +44,7 @@ public class Game extends JPanel
 	public static Player singlePlayer;
 	private final Random random = new Random();
 	private volatile boolean isPaused = false; // flag to know when the game is paused
-	public volatile boolean isGameFinished; // flag to know when the game is done
+	public volatile boolean isGameFinished = false; // flag to know when the game is done
 	public volatile boolean isIterating = false; // flag to know if we iterate through a list
 
 	//private GameClient socketClient;
@@ -246,10 +246,10 @@ public class Game extends JPanel
 	{
 		players.clear();
 
-		for (Asteroid asteroid : asteroids) asteroid.foundHit = true;
+		for (Asteroid asteroid : asteroids) asteroid.collided = true;
 		asteroids.clear();
 
-		for (Spaceship spaceship : spaceships) spaceship.foundHit = true;
+		for (Spaceship spaceship : spaceships) spaceship.collided = true;
 		spaceships.clear();
 
 		for (Ball ball : balls) ball.setSize(Constants.DEAD_BALL_SIZE);

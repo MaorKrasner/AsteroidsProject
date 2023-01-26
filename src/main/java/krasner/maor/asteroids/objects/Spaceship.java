@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -26,8 +27,6 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	private int y; // y coordinate of the spaceship
 
 	private Timer timer; // timer to notify every fixed amount of time about event
-
-	private int counter = 0; // counter to know when to pop up an event of changing y direction
 
 	private final Game game; // // instance of the game panel
 
@@ -47,7 +46,9 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	
 	private static int spaceshipIndex = 0; // static counter for the serial index of each spaceship
 	
-	public volatile boolean foundHit = false; // variable to know if the spaceship collided with another object
+	public volatile boolean collided = false; // variable to know if the spaceship collided with another object
+
+	private volatile boolean inTheZone = false; // variable to know whether the asteroid is in the bounds of the screen or not
 
 	private volatile boolean isRunning = false; // variable to know whether the spaceship is running or not
 
@@ -83,7 +84,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		initializeArraysValues();
 		polygon = new Polygon(xAxios, yAxios, 8);
 		b = new Ball(); // garbage value initialization for the ball
-		chosenDirX = (x == -100) ? 1 : -1;
+		chosenDirX = (x < 0) ? 1 : -1;
 		chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
 	}
 
@@ -139,46 +140,34 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	@Override
 	public void actionPerformed(ActionEvent e) 
 	{
-		if (!foundHit && !isOutOfBounds)
-		{
-			counter++; // every 500 milliseconds (0.5 seconds) , the counter goes up by 1
-			
-			// if the counter goes up to 2 (1 second), we change the direction of y
-			// and spawn a new ball from the correct coordinates
-			if(counter == 2 && !foundHit)  
-			{
-				/***
-				 * determine the extra value for the spawn of the ball
-				 */
-				int valueOfSpawn;
-				if (this.size == SizeTypes.BIG)
-					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_FIRST;
-				else if (this.size == SizeTypes.MEDIUM)
-					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_SECOND;
-				else
-					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_THIRD;
-				
-				if (isAlive())
-				{
-					// create a new ball if the other one is already dead and run it immediately
-					AudioUtil.playAudio("resources/sounds/fire.wav");
-					b = new Ball(polygon.xpoints[4] + valueOfSpawn, polygon.ypoints[4] + 5, game);
-					b.isFromSpaceship = true;
-					if (!foundHit && !isOutOfBounds)
-						b.indexFromSpaceship = findIndexOfSpaceshipInArray(); // FIX HERE
-					game.balls.add(b); // add bullet to the list of bullets
-					b.start();
-				}
-
-				counter = 0;
-				int YofBefore = chosenDirY;
-				chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
-				while (YofBefore == chosenDirY) // while we didn't get other value, we randomize
-					chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
-			}
+		if (!this.inTheZone) {
+			chosenDirY = 0;
+			this.hasTheSpaceshipEnteredTheBounds();
 		}
-		else
-			timer.stop(); // stop when we need to
+		else {
+			int before = chosenDirY;
+			chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
+			while (before == chosenDirY) // while we didn't get other value, we randomize
+				chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
+
+			// determine the extra value for the spawn of the ball
+			int valueOfSpawn;
+			if (this.size == SizeTypes.BIG)
+				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_FIRST;
+			else if (this.size == SizeTypes.MEDIUM)
+				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_SECOND;
+			else
+				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_THIRD;
+
+			// create a new ball if the other one is already dead and run it immediately
+			AudioUtil.playAudio("src/main/resources/sounds/fire.wav");
+			b = new Ball(polygon.xpoints[4] + valueOfSpawn, polygon.ypoints[4] + 5, game);
+			b.isFromSpaceship = true;
+			if (!collided && !isOutOfBounds)
+				b.indexFromSpaceship = findIndexOfSpaceshipInArray(); // FIX HERE
+			game.balls.add(b); // add bullet to the list of bullets
+			b.start();
+		}
 	}
 
 	/***
@@ -187,7 +176,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	 */
 	public void drawSpaceship(Graphics g)
 	{
-		if (!foundHit) {
+		if (!collided) {
 			g.setColor(Color.WHITE);
 			g.drawPolygon(polygon);
 		}
@@ -212,6 +201,30 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		AudioUtil.playAudio("src/main/resources/sounds/spaceshipexplode.wav");
 	}
 
+	/***
+	 * function that checks if the spaceship is out of bounds or not
+	 * @return - return true if the asteroid is out of bounds, otherwise return false.
+	 */
+	private boolean isSpaceshipOutOfBounds()
+	{
+		for (int i = 0; i < polygon.npoints; i++)
+		{
+			if (!(polygon.xpoints[i] < 0 || polygon.xpoints[i] > Constants.SCREEN_WIDTH || polygon.ypoints[i] < 0 || polygon.ypoints[i] > Constants.SCREEN_HEIGHT))
+				return false;
+		}
+		return true;
+	}
+
+	/***
+	 * function to check if the polygon of the asteroid has entered the area of the screen and update the variable inTheZone
+	 */
+	private void hasTheSpaceshipEnteredTheBounds()
+	{
+		int rightestX = Arrays.stream(polygon.xpoints).max().getAsInt();
+		int leftestX = Arrays.stream(polygon.xpoints).min().getAsInt();
+		this.inTheZone = (chosenDirX == 1) ? leftestX > 0 : rightestX < Constants.SCREEN_WIDTH;
+	}
+
 	@Override
 	public void run()
 	{
@@ -222,12 +235,12 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 
 		// sleep for 3 seconds as a starting barrier
 		try{
-			Thread.sleep(3000);
+			Thread.sleep(1500);
 		}catch(InterruptedException e) {}
 		
 		this.isRunning = true;
 
-		while (!game.isGameFinished && !foundHit && !isOutOfBounds)
+		while (!game.isGameFinished && !collided && !isOutOfBounds)
 		{
 			synchronized (this) {
 				if (game.getIsGamePaused()) {
@@ -247,14 +260,14 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			if (polygon.xpoints[2] > 150 && polygon.xpoints[7] < 1150)
 			{
 				// check for asteroids
-				if (!foundHit)
+				if (!collided)
 				{
 					for (int i = 0; i < game.asteroids.size(); i++)
 					{
 						if (Hits.isSpaceshipHittingAsteroid(this, game.asteroids.get(i)))
 						{
-							foundHit = true;
-							game.asteroids.get(i).foundHit = true;
+							collided = true;
+							game.asteroids.get(i).collided = true;
 							game.asteroids.get(i).chooseSoundOfBang();
 							game.asteroids.remove(i);
 						}
@@ -263,11 +276,10 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			}
 
 			// check if the spaceship is out of bounds
-			if (!foundHit)
-				isOutOfBounds = polygon.xpoints[3] >= Constants.SCREEN_WIDTH + 90 || polygon.xpoints[6] <= -90 ||
-						polygon.ypoints[4] <= 0 || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT + 90;
+			if (!collided)
+				isOutOfBounds = isOutOfBounds = this.inTheZone && isSpaceshipOutOfBounds();
 
-			if (!foundHit && !isOutOfBounds)
+			if (!collided && !isOutOfBounds)
 			{
 				try {
 					Thread.sleep(4);

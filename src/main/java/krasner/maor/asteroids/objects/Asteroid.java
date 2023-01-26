@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -33,7 +34,7 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	private final int chosenDirX; // value of the direction of movement of the asteroid in x-axis
 	private int chosenDirY; // value of the direction of movement of the asteroid in y-axis
 
-	private Timer t; // timer to notify every fixed amount of time about event
+	private Timer timer; // timer to notify every fixed amount of time about event
 
 	private final SizeTypes sizeTypes; // the size of the asteroid
 	private final AsteroidType type; // the type of the asteroid
@@ -47,13 +48,15 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	private int[] xAxios; // array to represent the x coordinates of the asteroid polygon
 	private int[] yAxios; // array to represent the y coordinates of the asteroid polygon
 
-	public volatile boolean foundHit = false; // variable to know if the asteroid collided with another object
+	public volatile boolean collided = false; // variable to know if the asteroid collided with another object
 
 	private volatile boolean isOutOfBounds = false; // variable to know when the asteroid is out of bounds
 
 	private volatile boolean isRunningOnScreen = false; // variable to know whether the asteroid is running or not
 
 	public volatile boolean visible = true; // variable to know if the asteroid is visible
+
+	private volatile boolean inTheZone = false; // variable to know whether the asteroid is in the bounds of the screen or not
 
 	private final int serialIndex; // the index of the asteroid in the game
 
@@ -100,10 +103,16 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		int before = chosenDirY;
-		chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
-		while (before == chosenDirY) // while we didn't get other value, we randomize
+		if (!this.inTheZone) {
+			chosenDirY = 0;
+			this.hasTheAsteroidEnteredTheBounds();
+		}
+		else {
+			int before = chosenDirY;
 			chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
+			while (before == chosenDirY) // while we didn't get other value, we randomize
+				chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
+		}
 	}
 
 	public boolean getIsRunningOnScreen() { return isRunningOnScreen; }
@@ -127,7 +136,7 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	 */
 	public void drawAsteroid(Graphics g)
 	{
-		if (!foundHit) {
+		if (!collided) {
 			g.setColor(Color.WHITE);
 			g.drawPolygon(polygon);
 		}
@@ -211,11 +220,20 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	{
 		for (int i = 0; i < polygon.npoints; i++)
 		{
-			if (polygon.xpoints[i] < -250 || polygon.xpoints[i] > Constants.SCREEN_WIDTH + 250
-					|| polygon.ypoints[i] < -250 || polygon.ypoints[i] > Constants.SCREEN_HEIGHT + 250)
-				return true;
+			if (!(polygon.xpoints[i] < 0 || polygon.xpoints[i] > Constants.SCREEN_WIDTH || polygon.ypoints[i] < 0 || polygon.ypoints[i] > Constants.SCREEN_HEIGHT))
+				return false;
 		}
-		return false;
+		return true;
+	}
+
+	/***
+	 * function to check if the polygon of the asteroid has entered the area of the screen and update the variable inTheZone
+	 */
+	private void hasTheAsteroidEnteredTheBounds()
+	{
+		int rightestX = Arrays.stream(polygon.xpoints).max().getAsInt(); // TODO : fix NoSuchElementException , No value present
+		int leftestX = Arrays.stream(polygon.xpoints).min().getAsInt(); // TODO : fix NoSuchElementException , No value present
+		this.inTheZone = (chosenDirX == 1) ? leftestX > 0 : rightestX < Constants.SCREEN_WIDTH;
 	}
 
 	public void run()
@@ -225,16 +243,14 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 		// sleep for 0.6 seconds as a starting barrier
 		try{
 			Thread.sleep(600);
-		}catch(InterruptedException e) {
-			log.info(String.valueOf(e));
-		}
+		}catch(InterruptedException e) {}
 
 		this.isRunningOnScreen = true;
 
-		t = new Timer(1000, this);
-		t.start();
+		timer = new Timer(250, this);
+		timer.start();
 
-		while (!game.isGameFinished && !foundHit && !isOutOfBounds)
+		while (!game.isGameFinished && !collided && !isOutOfBounds)
 		{
 			synchronized (this) {
 				if (game.getIsGamePaused()) {
@@ -245,10 +261,10 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 			}
 
 			// check if the spaceship is out of bounds
-			if (!foundHit)
-				isOutOfBounds = isAsteroidOutOfBounds();
+			if (!collided)
+				isOutOfBounds = this.inTheZone && isAsteroidOutOfBounds();
 
-			if (!foundHit && !isOutOfBounds)
+			if (!collided && !isOutOfBounds)
 			{
 				polygon.translate(chosenDirX, chosenDirY);
 				x += chosenDirX;
@@ -257,11 +273,14 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 				try {
 					Thread.sleep(5);
 				}catch(InterruptedException ignored) {};
+
 				game.repaint();
 			}
 
-			else
+			else {
+				timer.stop();
 				log.info("Asteroid " + this.serialIndex + " is dead");
+			}
 		}
 
 		asteroidsMonitor.imDone(this.serialIndex); // finish the task of the thread
