@@ -585,9 +585,10 @@ public class Player extends Thread implements Serializable, ActionListener
 					game.repaint();
 				}
 			}
-			else
-				game.stop();
-				//game.isGameFinished = true;
+
+			else {
+				game.isGameFinished = true;
+			}
 		}
 	}
 }

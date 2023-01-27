@@ -154,9 +154,10 @@ public class Ball extends Thread implements Hittable, Serializable
 				{
 					if (!game.isIterating) {
 						collided = true;
+						game.asteroids.get(i).collided = true;
+
 						this.size = Constants.DEAD_BALL_SIZE;
 
-						game.asteroids.get(i).collided = true;
 						if (isFromShooter)
 							game.asteroids.get(i).addPointsToShooter();
 

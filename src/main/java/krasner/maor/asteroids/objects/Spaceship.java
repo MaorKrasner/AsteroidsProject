@@ -140,33 +140,39 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	@Override
 	public void actionPerformed(ActionEvent e) 
 	{
-		if (!this.inTheZone) {
-			chosenDirY = 0;
-			this.hasTheSpaceshipEnteredTheBounds();
-		}
-		else {
-			int before = chosenDirY;
-			chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
-			while (before == chosenDirY) // while we didn't get other value, we randomize
+		if (!game.getIsGamePaused() && !collided && !isOutOfBounds)
+		{
+			if (!this.inTheZone) {
+				chosenDirY = 0;
+				this.hasTheSpaceshipEnteredTheBounds();
+			}
+			else {
+				int before = chosenDirY;
 				chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
+				while (before == chosenDirY) // while we didn't get other value, we randomize
+					chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
 
-			// determine the extra value for the spawn of the ball
-			int valueOfSpawn;
-			if (this.size == SizeTypes.BIG)
-				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_FIRST;
-			else if (this.size == SizeTypes.MEDIUM)
-				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_SECOND;
-			else
-				valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_THIRD;
+				// determine the extra value for the spawn of the ball
+				int valueOfSpawn;
+				if (this.size == SizeTypes.BIG)
+					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_FIRST;
+				else if (this.size == SizeTypes.MEDIUM)
+					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_SECOND;
+				else
+					valueOfSpawn = Constants.HALF_GAP_BETWEEN_X_ARRAY_IN_IND_4_AND_5_THIRD;
 
-			// create a new ball if the other one is already dead and run it immediately
-			AudioUtil.playAudio("src/main/resources/sounds/fire.wav");
-			b = new Ball(polygon.xpoints[4] + valueOfSpawn, polygon.ypoints[4] + 5, game);
-			b.isFromSpaceship = true;
-			if (!collided && !isOutOfBounds)
-				b.indexFromSpaceship = findIndexOfSpaceshipInArray(); // FIX HERE
-			game.balls.add(b); // add bullet to the list of bullets
-			b.start();
+				if (isAlive())
+				{
+					// create a new ball if the other one is already dead and run it immediately
+					AudioUtil.playAudio("src/main/resources/sounds/fire.wav");
+					b = new Ball(polygon.xpoints[4] + valueOfSpawn, polygon.ypoints[4] + 5, game);
+					b.isFromSpaceship = true;
+					if (!collided && !isOutOfBounds)
+						b.indexFromSpaceship = findIndexOfSpaceshipInArray(); // FIX HERE
+					game.balls.add(b); // add bullet to the list of bullets
+					b.start();
+				}
+			}
 		}
 	}
 
@@ -228,7 +234,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	@Override
 	public void run()
 	{
-		timer = new Timer(500, this);
+		timer = new Timer(750, this);
 		timer.start();
 		
 		spaceshipsMonitor.waitForMyTurn(this.serialIndex);
@@ -236,7 +242,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		// sleep for 3 seconds as a starting barrier
 		try{
 			Thread.sleep(1500);
-		}catch(InterruptedException e) {}
+		} catch(InterruptedException ignored) {}
 		
 		this.isRunning = true;
 
@@ -269,6 +275,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 							collided = true;
 							game.asteroids.get(i).collided = true;
 							game.asteroids.get(i).chooseSoundOfBang();
+							game.asteroids.get(i).getPolygon().translate(5000, 5000);
 							game.asteroids.remove(i);
 						}
 					}

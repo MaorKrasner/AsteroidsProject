@@ -172,19 +172,23 @@ public class Game extends JPanel
 
 		}
 
-		// manage the controls for escape and enter buttons
+		/***
+		 * function to manage some keyboard buttons in the game panel
+		 */
 		private void managePanelControls() {
-			for (Integer key : pressedKeys) {
+			for (int key : pressedKeys) {
 				switch (key) {
-					case KeyEvent.VK_ESCAPE:
-						isPaused = !isPaused;
-						if (!isPaused)
-							freeGameObjects();
-						break;
-					case KeyEvent.VK_ENTER:
+					case KeyEvent.VK_ESCAPE -> {
+						if (singlePlayerMode) {
+							isPaused = !isPaused;
+							if (!isPaused)
+								freeGameObjects();
+						}
+					}
+					case KeyEvent.VK_ENTER -> {
 						if (isGameFinished)
 							recreateGame();
-						break;
+					}
 				}
 			}
 		}
@@ -211,6 +215,7 @@ public class Game extends JPanel
 		destroyObjects();
 		isGameFinished = false;
 		initializeGameObjects();
+		activateGameObjects();
 	}
 
 	private void initializeGameObjects()
@@ -236,10 +241,6 @@ public class Game extends JPanel
 		for (Player player : players) player.start();
 		for (Asteroid asteroid : asteroids) asteroid.start();
 		for (Spaceship spaceship : spaceships) spaceship.start();
-	}
-
-	public synchronized void stop() {
-		isGameFinished = true;
 	}
 
 	public void destroyObjects()

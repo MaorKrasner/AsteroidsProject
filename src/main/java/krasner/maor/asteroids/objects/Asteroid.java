@@ -247,7 +247,7 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 
 		this.isRunningOnScreen = true;
 
-		timer = new Timer(250, this);
+		timer = new Timer(750, this);
 		timer.start();
 
 		while (!game.isGameFinished && !collided && !isOutOfBounds)
