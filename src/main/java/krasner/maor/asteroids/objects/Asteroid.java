@@ -52,10 +52,6 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 
 	private volatile boolean isOutOfBounds = false; // variable to know when the asteroid is out of bounds
 
-	private volatile boolean isRunningOnScreen = false; // variable to know whether the asteroid is running or not
-
-	public volatile boolean visible = true; // variable to know if the asteroid is visible
-
 	private volatile boolean inTheZone = false; // variable to know whether the asteroid is in the bounds of the screen or not
 
 	private final int serialIndex; // the index of the asteroid in the game
@@ -114,8 +110,6 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 				chosenDirY = Constants.MOVEMENT_YARR[rnd.nextInt(3)];
 		}
 	}
-
-	public boolean getIsRunningOnScreen() { return isRunningOnScreen; }
 
 	/***
 	 * function that add points to the score of the shooter according to the size of asteroid
@@ -231,21 +225,23 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 	 */
 	private void hasTheAsteroidEnteredTheBounds()
 	{
-		int rightestX = Arrays.stream(polygon.xpoints).max().getAsInt(); // TODO : fix NoSuchElementException , No value present
-		int leftestX = Arrays.stream(polygon.xpoints).min().getAsInt(); // TODO : fix NoSuchElementException , No value present
+		int rightestX = Integer.MIN_VALUE;
+		int leftestX = Integer.MAX_VALUE;
+
+		for (int i = 0; i < polygon.npoints; i++)
+		{
+			if (polygon.xpoints[i] > rightestX)
+				rightestX = polygon.xpoints[i];
+			if (polygon.xpoints[i] < leftestX)
+				leftestX = polygon.xpoints[i];
+		}
+
 		this.inTheZone = (chosenDirX == 1) ? leftestX > 0 : rightestX < Constants.SCREEN_WIDTH;
 	}
 
 	public void run()
 	{
 		asteroidsMonitor.waitForMyTurn(this.serialIndex); // start the task of the thread
-
-		// sleep for 0.6 seconds as a starting barrier
-		try{
-			Thread.sleep(600);
-		}catch(InterruptedException e) {}
-
-		this.isRunningOnScreen = true;
 
 		timer = new Timer(750, this);
 		timer.start();
@@ -276,12 +272,11 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 
 				game.repaint();
 			}
-
-			else {
-				timer.stop();
-				log.info("Asteroid " + this.serialIndex + " is dead");
-			}
 		}
+
+		timer.stop();
+		polygon.translate(4000, 4000);
+		log.info("Asteroid " + this.serialIndex + " is dead");
 
 		asteroidsMonitor.imDone(this.serialIndex); // finish the task of the thread
 	}

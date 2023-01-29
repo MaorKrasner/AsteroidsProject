@@ -50,8 +50,6 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 
 	private volatile boolean inTheZone = false; // variable to know whether the asteroid is in the bounds of the screen or not
 
-	private volatile boolean isRunning = false; // variable to know whether the spaceship is running or not
-
 	Random rnd = new Random(); // random variable to generate values for the spaceship
 
 	@Getter
@@ -239,13 +237,6 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 		
 		spaceshipsMonitor.waitForMyTurn(this.serialIndex);
 
-		// sleep for 3 seconds as a starting barrier
-		try{
-			Thread.sleep(1500);
-		} catch(InterruptedException ignored) {}
-		
-		this.isRunning = true;
-
 		while (!game.isGameFinished && !collided && !isOutOfBounds)
 		{
 			synchronized (this) {
@@ -266,18 +257,15 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 			if (polygon.xpoints[2] > 150 && polygon.xpoints[7] < 1150)
 			{
 				// check for asteroids
-				if (!collided)
+				for (int i = 0; i < game.asteroids.size() && !this.collided; i++)
 				{
-					for (int i = 0; i < game.asteroids.size(); i++)
+					Asteroid tmp = game.asteroids.get(i);
+					if (!collided && Hits.isSpaceshipHittingAsteroid(this, tmp))
 					{
-						if (Hits.isSpaceshipHittingAsteroid(this, game.asteroids.get(i)))
-						{
-							collided = true;
-							game.asteroids.get(i).collided = true;
-							game.asteroids.get(i).chooseSoundOfBang();
-							game.asteroids.get(i).getPolygon().translate(5000, 5000);
-							game.asteroids.remove(i);
-						}
+						collided = true;
+						game.asteroids.get(i).collided = true;
+						game.asteroids.get(i).chooseSoundOfBang();
+						game.asteroids.get(i).setPolygon(new Polygon(new int[]{}, new int[]{}, 0));
 					}
 				}
 			}
@@ -293,13 +281,12 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 				}catch(InterruptedException ignored) {}
 				game.repaint();
 			}
-			else
-			{
-				this.isRunning = false;
-				log.info("Spaceship " + this.serialIndex + " is dead");
-				timer.stop();
-			}
 		}
+
+		timer.stop();
+		polygon.translate(5000, 5000);
+		log.info("Spaceship " + this.serialIndex + " is dead");
+
 		spaceshipsMonitor.imDone(this.serialIndex);
 	}
 }

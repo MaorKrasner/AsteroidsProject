@@ -245,6 +245,7 @@ public class Game extends JPanel
 
 	public void destroyObjects()
 	{
+		for (Player player : players) player.setLives(0);
 		players.clear();
 
 		for (Asteroid asteroid : asteroids) asteroid.collided = true;
@@ -253,7 +254,7 @@ public class Game extends JPanel
 		for (Spaceship spaceship : spaceships) spaceship.collided = true;
 		spaceships.clear();
 
-		for (Ball ball : balls) ball.setSize(Constants.DEAD_BALL_SIZE);
+		for (Ball ball : balls) ball.collided = true;
 		balls.clear();
 	}
 
@@ -356,7 +357,7 @@ public class Game extends JPanel
 			if (!asteroids.isEmpty()) {
 				synchronized (asteroids) {
 					for (Asteroid asteroid : asteroids) {
-						if (asteroid.isAlive() && asteroid.getPolygon().npoints > 0 && asteroid.getIsRunningOnScreen())
+						if (asteroid.isAlive() && asteroid.getPolygon().npoints > 0)
 							asteroid.drawAsteroid(g);
 					}
 				}

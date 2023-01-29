@@ -350,13 +350,53 @@ public class Player extends Thread implements Serializable, ActionListener
 	}
 
 	/***
+	 * function that finds the value that we need to add/remove when we transfer from left to right or from right to left
+	 * @return - return the value that needs to be added/removed for each point of the polygon
+	 */
+	private int findValueForChangeX() {
+		return Math.max(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]))
+				- Math.min(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]));
+	}
+
+	/***
+	 * function that finds the value that we need to add/remove when we transfer from up to down or from down to up
+	 * @return - return the value that needs to be added/removed for each point of the polygon
+	 */
+	private int findValueForChangeY() {
+		return Math.max(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]))
+				- Math.min(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]));
+	}
+
+	/***
 	 * transfer the player to the opposite edge of the screen
 	 */
 	private void transferPlayer() {
+
 		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
+
+		/*
+		boolean isOutOfHeight = !(checkYBounds(0) || checkYBounds(1) || checkYBounds(2));
+
+
+		int changeX = (isOutOfWidth) ? findValueForChangeX() : 0;
+		int changeY = (isOutOfHeight) ? findValueForChangeY() : 0;
+
+		int signX = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH ) ? -1 : 1;
+		int signY = (polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
+
+		int valueToTransferForX = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + changeX) * signX : 0;
+		int valueToTransferForY = (isOutOfHeight) ? (Constants.SCREEN_HEIGHT + changeY) * signY : 0;
+
+		for (int i = 0; i < polygon.npoints; i++) {
+			polygon.xpoints[i] += valueToTransferForX;
+			polygon.ypoints[i] += valueToTransferForY;
+		}
+
+		this.transferred = true;
+		*/
+
 		int toRemoveOrAdd = findValueForChange(isOutOfWidth);
 		int sign = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
-
 		int valueToTransfer = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + toRemoveOrAdd) * sign : (Constants.SCREEN_HEIGHT + toRemoveOrAdd) * sign;
 
 		for (int i = 0; i < polygon.npoints; i++) {
@@ -365,6 +405,7 @@ public class Player extends Thread implements Serializable, ActionListener
 			else
 				polygon.ypoints[i] += valueToTransfer;
 		}
+
 		this.transferred = true;
 	}
 
@@ -502,11 +543,14 @@ public class Player extends Thread implements Serializable, ActionListener
 							if (!game.isIterating) {
 								startTime = System.nanoTime(); // set a start time for the collision
 								this.visible = false;
-								game.asteroids.get(indAst).visible = false;
-								game.asteroids.get(indAst).chooseSoundOfBang();
-								game.asteroids.remove(tmp);
-								lives--;
 								collided = true;
+
+								game.asteroids.get(indAst).collided = true;
+								game.asteroids.get(indAst).chooseSoundOfBang();
+
+								game.asteroids.get(indAst).setPolygon(new Polygon(new int[]{}, new int[]{}, 0));
+
+								this.lives--;
 								log.info("Player got hit by asteroid");
 							}
 						}
@@ -523,12 +567,14 @@ public class Player extends Thread implements Serializable, ActionListener
 						if (Hits.isSpaceshipHittingShooter(game.spaceships.get(indSpace), this))
 						{
 							if (!game.isIterating) {
-								collided = true;
-								game.spaceships.get(indSpace).collided = true;
-								game.spaceships.get(indSpace).chooseSoundOfBang();
-								game.spaceships.remove(indSpace);
 								startTime = System.nanoTime(); // set a start time for the collision
 								this.visible = false;
+								collided = true;
+
+								game.spaceships.get(indSpace).collided = true;
+								game.spaceships.get(indSpace).chooseSoundOfBang();
+								game.spaceships.get(indSpace).setPolygon(new Polygon(new int[]{}, new int[]{}, 0));
+
 								this.lives--;
 								log.info("Player got hit by spaceship");
 							}
@@ -543,12 +589,14 @@ public class Player extends Thread implements Serializable, ActionListener
 							Hits.isShooterHittingBall(game.balls.get(indBall), this))
 					{
 						if (!game.isIterating) {
+							startTime = System.nanoTime(); // set a start time for the collision
 							this.visible = false;
 							collided = true;
-							startTime = System.nanoTime(); // set a start time for the collision
+							game.balls.get(indBall).collided = true;
 
 							game.balls.get(indBall).setSize(Constants.DEAD_BALL_SIZE);
 							game.balls.get(indBall).chooseSoundOfBang();
+							game.balls.remove(indBall);
 
 							this.lives--;
 							log.info("player got hit by ball");

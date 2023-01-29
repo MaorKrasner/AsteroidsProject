@@ -123,7 +123,7 @@ public class Ball extends Thread implements Hittable, Serializable
 			}
 
 			// check for all spaceships
-			for (int i = 0; i < game.spaceships.size() && !collided; i++)
+			for (int i = 0; i < game.spaceships.size() && !this.collided; i++)
 			{
 				if (game.spaceships.get(i).getPolygon().npoints > 0
 						&& game.spaceships.get(i).getPolygon().xpoints[2] > 150
@@ -133,14 +133,15 @@ public class Ball extends Thread implements Hittable, Serializable
 					{
 						if (!game.isIterating) {
 							collided = true;
+							game.spaceships.get(i).collided = true;
 							this.size = Constants.DEAD_BALL_SIZE;
 
-							game.spaceships.get(i).collided = true;
 							if (isFromShooter)
 								game.spaceships.get(i).addPointsToShooter();
+
 							game.spaceships.get(i).chooseSoundOfBang();
-							// make the spaceship invisible
-							game.spaceships.get(i).polygon = new Polygon(new int[]{}, new int[]{}, 0);
+							game.spaceships.get(i).polygon = new Polygon(new int[]{}, new int[]{}, 0); // make the spaceship invisible
+
 							log.info("Ball killed by spaceship");
 						}
 					}
@@ -148,22 +149,22 @@ public class Ball extends Thread implements Hittable, Serializable
 			}
 
 			// check for all asteroids
-			for (int i = 0; i < game.asteroids.size() && !collided; i++)
+			for (int i = 0; i < game.asteroids.size() && !this.collided; i++)
 			{
-				if (Hits.isBallHittingAsteroid(this, game.asteroids.get(i)))
+				Asteroid tmp = game.asteroids.get(i);
+				if (!collided && Hits.isBallHittingAsteroid(this, game.asteroids.get(i)))
 				{
 					if (!game.isIterating) {
 						collided = true;
 						game.asteroids.get(i).collided = true;
-
 						this.size = Constants.DEAD_BALL_SIZE;
 
 						if (isFromShooter)
 							game.asteroids.get(i).addPointsToShooter();
 
 						game.asteroids.get(i).chooseSoundOfBang();
-						game.asteroids.get(i).visible = false;
 						game.asteroids.get(i).setPolygon(new Polygon(new int[]{}, new int[]{}, 0)); // make the asteroid invisible
+
 						log.info("Ball killed by asteroid");
 					}
 				}
@@ -235,5 +236,8 @@ public class Ball extends Thread implements Hittable, Serializable
 			} catch(InterruptedException ignored) {}
 			game.repaint();
 		}
+
+		x += 4000;
+		y += 4000;
 	}
 }
