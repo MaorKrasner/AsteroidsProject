@@ -93,12 +93,7 @@ public final class Constants
     public final static int SMALL_HIT_ASTEROID = 100;
 
     /***
-     * counter for the name of an asteroid thread
-     ***/
-    public static int IND_COUNTER = 1;
-
-    /***
-     * counter for the name of an asteroid thread that is coming out of the original asteroids
-     ***/
-    public static int EXTRA_IND_COUNTER = 1;
+     * variable to store the value of distance from the player that confirms the player can respawn safely
+     */
+    public final static int SAFE_DISTANCE_VALUE = 100;
 }

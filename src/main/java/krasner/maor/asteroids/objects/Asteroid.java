@@ -25,7 +25,10 @@ public class Asteroid extends Thread implements Hittable, ActionListener, Serial
 
 	Random rnd = new Random(); // object to generate random values
 
+	@Getter
 	private int x; // x coordinate of the asteroid
+
+	@Getter
 	private int y; // y coordinate of the asteroid
 
 	private final int startX; // the x coordinate value of the start location

@@ -8,6 +8,28 @@ import java.awt.*;
 public class Hits
 {
 	/***
+	 * function that creates a rectangle based on the width and height of the polygon if it is surrounded by a virtual rectangle
+	 * @param polygon - the polygon that we make surround with the virtual rectangle
+	 * @return - return the rectangle created based on the values
+	 */
+	private static Rectangle getBounds(Polygon polygon) {
+
+		int leftestX = Integer.MAX_VALUE;
+		int highestY = Integer.MAX_VALUE;
+		int rightestX = Integer.MIN_VALUE;
+		int lowestY = Integer.MIN_VALUE;
+
+		for (int i = 0; i < polygon.npoints; i++) {
+			leftestX = Math.min(polygon.xpoints[i], leftestX);
+			highestY = Math.min(polygon.ypoints[i], highestY);
+			rightestX = Math.max(polygon.xpoints[i], rightestX);
+			lowestY = Math.max(polygon.ypoints[i], lowestY);
+		}
+
+		return new Rectangle(leftestX, highestY, rightestX - leftestX, lowestY - highestY);
+	}
+
+	/***
 	 * function to check the collision between two polygons
 	 * @param polygon1 - The polygon of the first object
 	 * @param polygon2 - The polygon of the second object
@@ -15,19 +37,10 @@ public class Hits
 	 */
 	private static boolean isPolygonCollidingWithAnotherPolygon(Polygon polygon1, Polygon polygon2) {
 
-		for (int i = 0; i < polygon1.npoints; i++) {
-			Point p = new Point(polygon1.xpoints[i], polygon1.ypoints[i]);
-			if (polygon2.contains(p))
-				return true;
-		}
+		Rectangle rectangle1 = getBounds(polygon1);
+		Rectangle rectangle2 = getBounds(polygon2);
 
-		for (int i = 0; i < polygon2.npoints; i++) {
-			Point p = new Point(polygon2.xpoints[i], polygon2.ypoints[i]);
-			if (polygon1.contains(p))
-				return true;
-		}
-
-		return false;
+		return polygon1.intersects(rectangle2) || polygon2.intersects(rectangle1);
 	}
 
 	/***

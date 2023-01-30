@@ -22,8 +22,10 @@ import java.util.Random;
 @Slf4j
 public class Spaceship extends Thread implements ActionListener, Hittable, Serializable
 {
+	@Getter
 	private int x; // x coordinate of the spaceship
 
+	@Getter
 	private int y; // y coordinate of the spaceship
 
 	private Timer timer; // timer to notify every fixed amount of time about event
@@ -224,8 +226,17 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 	 */
 	private void hasTheSpaceshipEnteredTheBounds()
 	{
-		int rightestX = Arrays.stream(polygon.xpoints).max().getAsInt();
-		int leftestX = Arrays.stream(polygon.xpoints).min().getAsInt();
+		int rightestX = Integer.MIN_VALUE;
+		int leftestX = Integer.MAX_VALUE;
+
+		for (int i = 0; i < polygon.npoints; i++)
+		{
+			if (polygon.xpoints[i] > rightestX)
+				rightestX = polygon.xpoints[i];
+			if (polygon.xpoints[i] < leftestX)
+				leftestX = polygon.xpoints[i];
+		}
+
 		this.inTheZone = (chosenDirX == 1) ? leftestX > 0 : rightestX < Constants.SCREEN_WIDTH;
 	}
 

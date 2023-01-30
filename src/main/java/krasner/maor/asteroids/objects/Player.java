@@ -375,7 +375,7 @@ public class Player extends Thread implements Serializable, ActionListener
 		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
 
 		/*
-		boolean isOutOfHeight = !(checkYBounds(0) || checkYBounds(1) || checkYBounds(2));
+		boolean isOutOfHeight = !isOutOfWidth;
 
 
 		int changeX = (isOutOfWidth) ? findValueForChangeX() : 0;
@@ -386,6 +386,9 @@ public class Player extends Thread implements Serializable, ActionListener
 
 		int valueToTransferForX = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + changeX) * signX : 0;
 		int valueToTransferForY = (isOutOfHeight) ? (Constants.SCREEN_HEIGHT + changeY) * signY : 0;
+
+
+		Polygon temp = polygon;
 
 		for (int i = 0; i < polygon.npoints; i++) {
 			polygon.xpoints[i] += valueToTransferForX;
@@ -493,10 +496,65 @@ public class Player extends Thread implements Serializable, ActionListener
 	}
 
 	/***
+	 * function that checks if any of the game objects is close enough to the player it can't respawn safely
+	 * @return - return true if and only if none of the game objects is near enough to the player
+	 */
+	private boolean checkIfGameObjectsAreNear() {
+
+		boolean foundBad = false;
+
+		// check for all the asteroids
+		for (int i = 0; i < game.asteroids.size() && !foundBad; i++) {
+
+			// first of all, we check if the current asteroid thread is still blocked by the asteroids monitor
+			State currentThreadState = game.asteroids.get(i).getState();
+			if (currentThreadState == State.WAITING) {
+				foundBad = true;
+				continue;
+			}
+
+			if (Math.abs(game.asteroids.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
+					|| Math.abs(game.asteroids.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
+				foundBad = true;
+			}
+		}
+
+		// check for all the spaceships
+		for (int i = 0; i < game.spaceships.size() && !foundBad; i++) {
+
+			// first of all, we check if the current spaceship thread is still blocked by the asteroids monitor
+			State currentThreadState = game.spaceships.get(i).getState();
+			if (currentThreadState == State.WAITING) {
+				foundBad = true;
+				continue;
+			}
+
+			if (Math.abs(game.spaceships.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
+					|| Math.abs(game.spaceships.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
+				foundBad = true;
+			}
+		}
+
+		// check for all the balls
+		for (int i = 0; i < game.balls.size() && !foundBad; i++) {
+			if (Math.abs(game.balls.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
+					|| Math.abs(game.balls.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
+				foundBad = true;
+			}
+		}
+
+		return !foundBad;
+	}
+
+	/***
 	 * respawn the player
 	 */
 	private void respawn()
 	{
+		//boolean isRespawnSafe = false;
+		//while (!isRespawnSafe) {
+		//	isRespawnSafe = checkIfGameObjectsAreNear();
+		//}
 		this.x = startX;
 		this.y = startY;
 		arrx[0] = x;
