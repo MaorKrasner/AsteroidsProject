@@ -283,7 +283,7 @@ public class Spaceship extends Thread implements ActionListener, Hittable, Seria
 
 			// check if the spaceship is out of bounds
 			if (!collided)
-				isOutOfBounds = isOutOfBounds = this.inTheZone && isSpaceshipOutOfBounds();
+				isOutOfBounds = this.inTheZone && isSpaceshipOutOfBounds();
 
 			if (!collided && !isOutOfBounds)
 			{

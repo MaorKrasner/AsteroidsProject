@@ -31,8 +31,7 @@ public class Game extends JPanel
 {
 	@Serial
 	private static final long serialVersionUID = 1L;
-
-	private GameFrame frame;
+	private final GameFrame frame;
 	public final KeyboardListener keyboard;
 	public static boolean singlePlayerMode = true; // flag to know if we want to play single player or multiplayer
 
@@ -46,13 +45,7 @@ public class Game extends JPanel
 	private volatile boolean isPaused = false; // flag to know when the game is paused
 	public volatile boolean isGameFinished = false; // flag to know when the game is done
 	public volatile boolean isIterating = false; // flag to know if we iterate through a list
-
-	//private GameClient socketClient;
-	//private GameServer socketServer;
-	//private static Server1 gameServer;
-
 	private Client gameClient;
-
 	@Getter
 	private int index = 0;
 
@@ -124,9 +117,9 @@ public class Game extends JPanel
 			if (!singlePlayerMode) {
 				while (true) { // PROBLEM HERE, MUST FIX THE WHILE TRUE
 					gameClient.p1 = players.get(index).polygon;
-					//gameClient.asteroids1 = asteroids;
-					//gameClient.spaceships1 = spaceships;
-					//gameClient.balls1 = balls;
+					gameClient.asteroids1 = asteroids;
+					gameClient.spaceships1 = spaceships;
+					gameClient.balls1 = balls;
 
 					int indexOfOther = 1 - index; // find the opposite player
 
@@ -136,10 +129,10 @@ public class Game extends JPanel
 						players.get(indexOfOther).polygon.addPoint(gameClient.p2.xpoints[i], gameClient.p2.ypoints[i]);
 					}
 
-					if (this.index == 1) {
-						//this.asteroids = gameClient.asteroids2;
-						//this.spaceships = gameClient.spaceships2;
-						//this.balls = gameClient.balls2;
+					if (this.index == Constants.RECEIVER) {
+						this.asteroids = gameClient.asteroids2;
+						this.spaceships = gameClient.spaceships2;
+						this.balls = gameClient.balls2;
 					}
 
 					try {
@@ -207,6 +200,9 @@ public class Game extends JPanel
 			// create for every game panel instance it's own client.
 			Polygon currentPlayer = this.players.get(this.index).polygon;
 			gameClient.p1 = currentPlayer;
+			gameClient.asteroids1 = asteroids;
+			gameClient.spaceships1 = spaceships;
+			gameClient.balls1 = balls;
 		}
 	}
 
@@ -221,15 +217,17 @@ public class Game extends JPanel
 	private void initializeGameObjects()
 	{
 		if (!singlePlayerMode) {
-			player1 = new Player(300, 330, this, keyboard, 0);
-			player2 = new Player(Constants.SCREEN_WIDTH - 300, 330, this, keyboard, 1);
+			player1 = new Player(300, 330, this, keyboard, Constants.SENDER);
+			player2 = new Player(Constants.SCREEN_WIDTH - 300, 330, this, keyboard, Constants.RECEIVER);
 			players.add(player1);
 			players.add(player2);
 		}
 		else {
-			singlePlayer = new Player(600, 330, this, keyboard, 0);
+			singlePlayer = new Player(600, 330, this, keyboard, Constants.SENDER);
 			players.add(singlePlayer);
 		}
+
+		//if ()
 
 		addAsteroidsToGame();
 
@@ -238,9 +236,11 @@ public class Game extends JPanel
 
 	private void activateGameObjects()
 	{
-		for (Player player : players) player.start();
-		for (Asteroid asteroid : asteroids) asteroid.start();
-		for (Spaceship spaceship : spaceships) spaceship.start();
+		if (this.index == Constants.SENDER) {
+			for (Player player : players) player.start();
+			for (Asteroid asteroid : asteroids) asteroid.start();
+			for (Spaceship spaceship : spaceships) spaceship.start();
+		}
 	}
 
 	public void destroyObjects()

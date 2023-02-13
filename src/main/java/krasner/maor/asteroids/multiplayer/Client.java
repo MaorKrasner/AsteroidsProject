@@ -116,10 +116,11 @@ public class Client extends Thread {
                 {
                     p.addPoint(this.p1.xpoints[i], this.p1.ypoints[i]);
                 }
+
                 data1 = new Data(p);
-                //data1.asteroids = asteroids1;
-                //data1.spaceships = spaceships1;
-                //data1.balls = balls1;
+                data1.asteroids = asteroids1;
+                data1.spaceships = spaceships1;
+                data1.balls = balls1;
                 objectOutputStream.writeObject(data1);
 
                 data2 = (Data) objectInputStream.readObject();
@@ -130,9 +131,9 @@ public class Client extends Thread {
                     this.p2.addPoint(data2.playerPolygon.xpoints[i], data2.playerPolygon.ypoints[i]);
                 }
 
-                //this.asteroids2 = data2.asteroids;
-                //this.spaceships2 = data2.spaceships;
-                //this.balls2 = data2.balls;
+                this.asteroids2 = data2.asteroids;
+                this.spaceships2 = data2.spaceships;
+                this.balls2 = data2.balls;
 
             } catch (IOException e) {
                 try {

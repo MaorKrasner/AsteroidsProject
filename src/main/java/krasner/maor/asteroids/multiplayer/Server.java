@@ -72,7 +72,7 @@ public class Server {
         ++Server.ClientCounter;
 
         String s = "start";
-        objectOutputStream1.writeObject(s);
+        objectOutputStream1.writeObject(s); // problem here
         objectOutputStream2.writeObject(s);
 
         inputStream1 = socket1.getInputStream();
@@ -83,7 +83,7 @@ public class Server {
 
         // handler thread for client 1
         Thread handleClient1 = new Thread(() -> {
-            while(true)
+            while (true)
             {
                 try {
                     Data d1 = (Data) objectInputStream1.readObject(); // read data from client1
@@ -113,7 +113,6 @@ public class Server {
 
                     try {
                         Thread.sleep(1);
-
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -134,7 +133,7 @@ public class Server {
      * close the server
      */
     public void closeServer() {
-        this.isServerOn = false;
+        isServerOn = false;
     }
 
     public static void main(String[] args) throws IOException {

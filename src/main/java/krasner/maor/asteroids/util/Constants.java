@@ -67,6 +67,13 @@ public final class Constants
     public final static int MAX_PLAYERS = 2;
 
     /***
+     * variable to know whether the owner of the panel is the first player or the second one.
+     * the first player always updates its data and the second player always receives the data from the first player
+     ***/
+    public final static int SENDER = 0;
+    public final static int RECEIVER = 1;
+
+    /***
      * array that has all the possible options for y value movement for the spaceships and asteroids
      ***/
     public final static int[] MOVEMENT_YARR = {0, -1, 1};
@@ -91,9 +98,4 @@ public final class Constants
     public final static int BIG_HIT_ASTEROID = 20;
     public final static int MEDIUM_HIT_ASTEROID = 50;
     public final static int SMALL_HIT_ASTEROID = 100;
-
-    /***
-     * variable to store the value of distance from the player that confirms the player can respawn safely
-     */
-    public final static int SAFE_DISTANCE_VALUE = 100;
 }

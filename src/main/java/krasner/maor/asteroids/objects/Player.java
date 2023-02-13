@@ -13,6 +13,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
 
@@ -45,6 +46,8 @@ public class Player extends Thread implements Serializable, ActionListener
 	@Getter
 	@Setter
 	public Polygon polygon; // polygon of the player
+
+	private Polygon respawnPolygon; // polygon that will help to respawn the player after he is dead
 	
 	public volatile boolean isDead = false; // is the player already dead or not
 
@@ -70,7 +73,7 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	private volatile long currTime = 0; // variable to store the current time
 
-	private Timer t; // timer to notify every fixed amount of time about event
+	private Timer timer; // timer to notify every fixed amount of time about event
 
 	public volatile boolean connected; // variable to check if we are connected to the server
 
@@ -79,8 +82,6 @@ public class Player extends Thread implements Serializable, ActionListener
 	private int index; // index of the player according to its game panel
 
 	private volatile boolean transferred = false; // variable to know if we finished the process of transferring the player to its opposite edge
-
-	private volatile boolean outOfBounds; // variable to know whether the player is out of bounds or in bounds
 
 	/***
 	 * constructor
@@ -103,6 +104,11 @@ public class Player extends Thread implements Serializable, ActionListener
 		arrx = new int[]{x, x - 20, x + 20};
 		arry = new int[]{y, y + 70, y + 70};
 		polygon = new Polygon(arrx, arry, 3);
+		respawnPolygon = new Polygon();
+		for (int i = 0; i < polygon.npoints; i++)
+		{
+			respawnPolygon.addPoint(polygon.xpoints[i], polygon.ypoints[i]);
+		}
 		this.initializePolygonLives();
 	}
 
@@ -350,57 +356,18 @@ public class Player extends Thread implements Serializable, ActionListener
 	}
 
 	/***
-	 * function that finds the value that we need to add/remove when we transfer from left to right or from right to left
-	 * @return - return the value that needs to be added/removed for each point of the polygon
-	 */
-	private int findValueForChangeX() {
-		return Math.max(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]))
-				- Math.min(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]));
-	}
-
-	/***
-	 * function that finds the value that we need to add/remove when we transfer from up to down or from down to up
-	 * @return - return the value that needs to be added/removed for each point of the polygon
-	 */
-	private int findValueForChangeY() {
-		return Math.max(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]))
-				- Math.min(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]));
-	}
-
-	/***
 	 * transfer the player to the opposite edge of the screen
 	 */
 	private void transferPlayer() {
 
 		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
-
-		/*
-		boolean isOutOfHeight = !isOutOfWidth;
-
-
-		int changeX = (isOutOfWidth) ? findValueForChangeX() : 0;
-		int changeY = (isOutOfHeight) ? findValueForChangeY() : 0;
-
-		int signX = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH ) ? -1 : 1;
-		int signY = (polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
-
-		int valueToTransferForX = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + changeX) * signX : 0;
-		int valueToTransferForY = (isOutOfHeight) ? (Constants.SCREEN_HEIGHT + changeY) * signY : 0;
-
-
-		Polygon temp = polygon;
-
-		for (int i = 0; i < polygon.npoints; i++) {
-			polygon.xpoints[i] += valueToTransferForX;
-			polygon.ypoints[i] += valueToTransferForY;
-		}
-
-		this.transferred = true;
-		*/
-
 		int toRemoveOrAdd = findValueForChange(isOutOfWidth);
 		int sign = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
 		int valueToTransfer = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + toRemoveOrAdd) * sign : (Constants.SCREEN_HEIGHT + toRemoveOrAdd) * sign;
+
+		log.info("TRANSFERRED FROM : ");
+		log.info("x's : " + Arrays.toString(polygon.xpoints));
+		log.info("y's : " + Arrays.toString(polygon.ypoints));
 
 		for (int i = 0; i < polygon.npoints; i++) {
 			if (isOutOfWidth)
@@ -408,6 +375,10 @@ public class Player extends Thread implements Serializable, ActionListener
 			else
 				polygon.ypoints[i] += valueToTransfer;
 		}
+
+		log.info("TO : ");
+		log.info("x's : " + Arrays.toString(polygon.xpoints));
+		log.info("y's : " + Arrays.toString(polygon.ypoints));
 
 		this.transferred = true;
 	}
@@ -496,82 +467,19 @@ public class Player extends Thread implements Serializable, ActionListener
 	}
 
 	/***
-	 * function that checks if any of the game objects is close enough to the player it can't respawn safely
-	 * @return - return true if and only if none of the game objects is near enough to the player
-	 */
-	private boolean checkIfGameObjectsAreNear() {
-
-		boolean foundBad = false;
-
-		// check for all the asteroids
-		for (int i = 0; i < game.asteroids.size() && !foundBad; i++) {
-
-			// first of all, we check if the current asteroid thread is still blocked by the asteroids monitor
-			State currentThreadState = game.asteroids.get(i).getState();
-			if (currentThreadState == State.WAITING) {
-				foundBad = true;
-				continue;
-			}
-
-			if (Math.abs(game.asteroids.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
-					|| Math.abs(game.asteroids.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
-				foundBad = true;
-			}
-		}
-
-		// check for all the spaceships
-		for (int i = 0; i < game.spaceships.size() && !foundBad; i++) {
-
-			// first of all, we check if the current spaceship thread is still blocked by the asteroids monitor
-			State currentThreadState = game.spaceships.get(i).getState();
-			if (currentThreadState == State.WAITING) {
-				foundBad = true;
-				continue;
-			}
-
-			if (Math.abs(game.spaceships.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
-					|| Math.abs(game.spaceships.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
-				foundBad = true;
-			}
-		}
-
-		// check for all the balls
-		for (int i = 0; i < game.balls.size() && !foundBad; i++) {
-			if (Math.abs(game.balls.get(i).getX() - this.polygon.xpoints[2]) < Constants.SAFE_DISTANCE_VALUE
-					|| Math.abs(game.balls.get(i).getX() - this.polygon.xpoints[0]) < Constants.SAFE_DISTANCE_VALUE) {
-				foundBad = true;
-			}
-		}
-
-		return !foundBad;
-	}
-
-	/***
 	 * respawn the player
 	 */
 	private void respawn()
 	{
-		//boolean isRespawnSafe = false;
-		//while (!isRespawnSafe) {
-		//	isRespawnSafe = checkIfGameObjectsAreNear();
-		//}
-		this.x = startX;
-		this.y = startY;
-		arrx[0] = x;
-		arrx[1] = x - 20;
-		arrx[2] = x + 20;
-		arry[0] = y;
-		arry[1] = y + 70;
-		arry[2] = y + 70;
-		polygon = new Polygon(arrx, arry, 3);
+		polygon = new Polygon(this.respawnPolygon.xpoints, this.respawnPolygon.ypoints, 3);
 		this.isInSlope = false;
 	}
 
 	@Override
 	public void run()
 	{
-		t = new Timer(200, this);
-		t.start();
+		timer = new Timer(200, this);
+		timer.start();
 
 		while (!game.isGameFinished && lives > 0)
 		{
@@ -585,10 +493,11 @@ public class Player extends Thread implements Serializable, ActionListener
 
 			manageControls(controls.pressedKeys);
 
-			this.outOfBounds = checkBounds(0) && checkBounds(1) && checkBounds(2);
+			// variable to know whether the player is out of bounds or in bounds
+			boolean inBounds = checkBounds(0) && checkBounds(1) && checkBounds(2);
 
 			// only if the player is in bounds, we can check if it makes collision
-			if (this.outOfBounds)
+			if (inBounds)
 			{
 				// check for all asteroids
 				for (int indAst = 0; indAst < game.asteroids.size() && !this.collided; indAst++)
@@ -674,12 +583,12 @@ public class Player extends Thread implements Serializable, ActionListener
 					currTime = 0;
 					startTime = 0;
 
+					// respawn the shooter
+					this.respawn();
+
 					// give back the original values to this variables
 					this.collided = false;
 					this.visible = true;
-
-					// respawn the shooter
-					this.respawn();
 				}
 			}
 
