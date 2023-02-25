@@ -51,6 +51,8 @@ public class Player extends Thread implements Serializable, ActionListener
 	
 	public volatile boolean isDead = false; // is the player already dead or not
 
+	private Color playerColor = Color.WHITE;
+
 	@Getter
 	@Setter
 	private int lives = 3; // how many lives are left for the player
@@ -73,6 +75,10 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	private volatile long currTime = 0; // variable to store the current time
 
+	private volatile long startTimeAfterRespawn = 0; // variable to know the time when the respawn process ended
+
+	private volatile long currentTimeAfterRespawn = 0; // variable to know the time after the respawn process ended
+
 	private Timer timer; // timer to notify every fixed amount of time about event
 
 	public volatile boolean connected; // variable to check if we are connected to the server
@@ -82,6 +88,8 @@ public class Player extends Thread implements Serializable, ActionListener
 	private int index; // index of the player according to its game panel
 
 	private volatile boolean transferred = false; // variable to know if we finished the process of transferring the player to its opposite edge
+
+	public volatile boolean isPlayerSafelyRespawned = true; // variable to know whether the player is safe after he respawned
 
 	/***
 	 * constructor
@@ -172,6 +180,20 @@ public class Player extends Thread implements Serializable, ActionListener
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		this.canShoot = true;
+
+		if (this.visible && !this.isPlayerSafelyRespawned) {
+			currentTimeAfterRespawn = System.nanoTime();
+
+			// only if 2 seconds passed after the player respawned, we can safely let him get destroyed again
+			if ((currentTimeAfterRespawn - startTimeAfterRespawn) / 1000000000 >= 2) {
+				playerColor = Color.WHITE;
+
+				startTimeAfterRespawn = 0;
+				currentTimeAfterRespawn = 0;
+
+				isPlayerSafelyRespawned = true;
+			}
+		}
 	}
 
 	@Override
@@ -389,7 +411,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	 */
 	public void drawPlayer(Graphics g)
 	{
-		g.setColor(Color.WHITE);
+		g.setColor(this.playerColor);
 		g.drawPolygon(polygon);
 	}
 
@@ -478,7 +500,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	@Override
 	public void run()
 	{
-		timer = new Timer(200, this);
+		timer = new Timer(150, this);
 		timer.start();
 
 		while (!game.isGameFinished && lives > 0)
@@ -500,7 +522,7 @@ public class Player extends Thread implements Serializable, ActionListener
 			if (inBounds)
 			{
 				// check for all asteroids
-				for (int indAst = 0; indAst < game.asteroids.size() && !this.collided; indAst++)
+				for (int indAst = 0; indAst < game.asteroids.size() && !this.collided && this.isPlayerSafelyRespawned; indAst++)
 				{
 					if (!collided)
 					{
@@ -525,7 +547,7 @@ public class Player extends Thread implements Serializable, ActionListener
 				}
 
 				// check for all spaceships
-				for (int indSpace = 0; indSpace < game.spaceships.size() && !this.collided; indSpace++)
+				for (int indSpace = 0; indSpace < game.spaceships.size() && !this.collided && this.isPlayerSafelyRespawned; indSpace++)
 				{
 					if (game.spaceships.get(indSpace).getPolygon().npoints > 0
 							&& !collided && game.spaceships.get(indSpace).getPolygon().xpoints[2] > 150
@@ -550,7 +572,7 @@ public class Player extends Thread implements Serializable, ActionListener
 				}
 
 				// check for all bullets
-				for (int indBall = 0; indBall < game.balls.size() && !this.collided; indBall++)
+				for (int indBall = 0; indBall < game.balls.size() && !this.collided && this.isPlayerSafelyRespawned; indBall++)
 				{
 					if (game.balls.get(indBall).isFromSpaceship && game.balls.get(indBall).isAlive() &&
 							Hits.isShooterHittingBall(game.balls.get(indBall), this))
@@ -579,7 +601,13 @@ public class Player extends Thread implements Serializable, ActionListener
 				// check if at least 3 seconds passed from the hit
 				if ((currTime - startTime) / 1000000000 >= 3)
 				{
-					// nullify values
+					// get the time of the respawn
+					startTimeAfterRespawn = currTime;
+
+					// temporary color for the respawn
+					playerColor = Color.BLUE;
+
+					// nullify values of times
 					currTime = 0;
 					startTime = 0;
 
@@ -587,6 +615,7 @@ public class Player extends Thread implements Serializable, ActionListener
 					this.respawn();
 
 					// give back the original values to this variables
+					this.isPlayerSafelyRespawned = false;
 					this.collided = false;
 					this.visible = true;
 				}
