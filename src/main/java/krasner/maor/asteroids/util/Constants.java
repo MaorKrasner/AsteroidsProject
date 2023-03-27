@@ -44,7 +44,7 @@ public final class Constants
      * Networking constants (port and server ip address)
      ***/
     public static final int PORT = 2358;
-    public static final String SERVER_IP = "localhost";
+    public static final String SERVER_IP = "127.0.0.1";
 
     /***
      * array that includes all the sizes of the game objects (ball, asteroid, spaceship)

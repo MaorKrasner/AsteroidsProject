@@ -40,8 +40,8 @@ public class Player extends Thread implements Serializable, ActionListener
 
 	public Polygon[] arrLives = new Polygon[3]; // array of polygons to represent the lives of the player
 
-	int[] xLivesArray; // array to represent the x of the player
-	int[] yLivesArray; // array to represent the y of the player
+	private int[] xLivesArray; // array to represent the x of the player
+	private int[] yLivesArray; // array to represent the y of the player
 
 	@Getter
 	@Setter

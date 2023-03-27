@@ -21,6 +21,8 @@ public class Client extends Thread {
     @Getter
     Socket socket; // socket of the client
 
+    public int index;
+
     @Getter
     InputStream inputStream; // input stream of the client
 
@@ -46,11 +48,12 @@ public class Client extends Thread {
      * @param p1 - the polygon of the player that is represented by the current client
      * @throws IOException
      */
-    public Client(Polygon p1) throws IOException
+    public Client(Polygon p1, int index) throws IOException
     {
         this.p1 = p1;
         this.p2 = new Polygon();
         p2.addPoint(500, 500);
+
 
         this.asteroids1 = new ArrayList<>();
         this.asteroids2 = new ArrayList<>();
@@ -60,6 +63,7 @@ public class Client extends Thread {
 
         this.balls1 = new ArrayList<>();
         this.balls2 = new ArrayList<>();
+
 
         t = new Thread(this);
         connectToServer();
@@ -76,6 +80,7 @@ public class Client extends Thread {
         this.p2 = new Polygon();
         p2.addPoint(500, 500);
 
+
         this.asteroids1 = new ArrayList<>();
         this.asteroids2 = new ArrayList<>();
 
@@ -84,6 +89,8 @@ public class Client extends Thread {
 
         this.balls1 = new ArrayList<>();
         this.balls2 = new ArrayList<>();
+
+
 
         t = new Thread(this);
         connectToServer();
@@ -118,9 +125,13 @@ public class Client extends Thread {
                 }
 
                 data1 = new Data(p);
-                data1.asteroids = asteroids1;
-                data1.spaceships = spaceships1;
-                data1.balls = balls1;
+
+                if (index == Constants.SENDER) {
+                    data1.asteroids = asteroids1;
+                    data1.spaceships = spaceships1;
+                    data1.balls = balls1;
+                }
+
                 objectOutputStream.writeObject(data1);
 
                 data2 = (Data) objectInputStream.readObject();
@@ -131,9 +142,11 @@ public class Client extends Thread {
                     this.p2.addPoint(data2.playerPolygon.xpoints[i], data2.playerPolygon.ypoints[i]);
                 }
 
+                //if (index == Constants.RECEIVER) {
                 this.asteroids2 = data2.asteroids;
                 this.spaceships2 = data2.spaceships;
                 this.balls2 = data2.balls;
+                //}
 
             } catch (IOException e) {
                 try {

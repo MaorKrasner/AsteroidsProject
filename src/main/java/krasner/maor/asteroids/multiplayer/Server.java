@@ -72,7 +72,7 @@ public class Server {
         ++Server.ClientCounter;
 
         String s = "start";
-        objectOutputStream1.writeObject(s); // problem here
+        objectOutputStream1.writeObject(s);
         objectOutputStream2.writeObject(s);
 
         inputStream1 = socket1.getInputStream();
@@ -93,7 +93,6 @@ public class Server {
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
                 } catch (IOException | ClassNotFoundException e) {
@@ -114,7 +113,6 @@ public class Server {
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
 

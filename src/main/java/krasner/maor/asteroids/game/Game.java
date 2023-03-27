@@ -53,6 +53,8 @@ public class Game extends JPanel
 
 	public Game(GameFrame frame)
 	{
+		// every game panel instance must do the initializations below until the conditions
+
 		this.frame = frame;
 
 		setVisible(true);
@@ -71,57 +73,38 @@ public class Game extends JPanel
 		keyboard = new KeyboardListener();
 		this.addKeyListener(keyboard);
 
-		initializeGameObjects();
-
-		clientStart();
-
-		try {
-			if (!singlePlayerMode)
-			{
-				Object obj;
-				obj = gameClient.getObjectInputStream().readObject();
-				if (obj instanceof Integer)
-				{
-					this.index = (Integer)obj;
-				}
-			}
-		} catch (IOException | ClassNotFoundException ignored) {}
-
-		System.out.println("INDEX : " + this.index);
-
-		initializeClient();
-
-		// thread to activate the game objects in case we are in multiplayer mode
-		if (!singlePlayerMode) {
-			Object obj;
-			try {
-				obj = gameClient.getObjectInputStream().readObject();
-				if (obj instanceof String) {
-					String command = (String)obj;
-					if (command.equals("start")) {
-						gameClient.t.start();
-						log.info("started " + index + "!");
-					}
-				}
-			} catch (IOException | ClassNotFoundException ignored) {}
-
+		// single player mode
+		if (singlePlayerMode) {
+			initializeGameObjects();
 			activateGameObjects();
 		}
 
+		// multiplayer mode
 		else {
-			activateGameObjects();
-		}
+			clientStart();
 
-		// Thread to update every 1 milliseconds the other player. This is the main thread of the panel
-		new Thread(() -> {
-			if (!singlePlayerMode) {
+			setIndexForGameInstance();
+
+			System.out.println("INDEX : " + this.index);
+
+			initializeGameObjects();
+
+			initializeClient();
+
+			activateMultiplayerGameObjects();
+
+			// Thread to update every 1 milliseconds the other player. This is the main thread of the panel
+			new Thread(() -> {
 				while (true) { // PROBLEM HERE, MUST FIX THE WHILE TRUE
 					gameClient.p1 = players.get(index).polygon;
-					gameClient.asteroids1 = asteroids;
-					gameClient.spaceships1 = spaceships;
-					gameClient.balls1 = balls;
 
-					int indexOfOther = 1 - index; // find the opposite player
+					if (this.index == Constants.SENDER) {
+						gameClient.asteroids1 = asteroids;
+						gameClient.spaceships1 = spaceships;
+						gameClient.balls1 = balls;
+					}
+
+					int indexOfOther = 1 - index; // find the opposite player index
 
 					players.get(indexOfOther).polygon = new Polygon();
 					for (int i = 0; i < gameClient.p2.npoints; i++)
@@ -129,18 +112,20 @@ public class Game extends JPanel
 						players.get(indexOfOther).polygon.addPoint(gameClient.p2.xpoints[i], gameClient.p2.ypoints[i]);
 					}
 
+
 					if (this.index == Constants.RECEIVER) {
 						this.asteroids = gameClient.asteroids2;
 						this.spaceships = gameClient.spaceships2;
 						this.balls = gameClient.balls2;
 					}
 
+
 					try {
 						Thread.sleep(1);
 					} catch (InterruptedException ignored){}
 				}
-			}
-		}).start();
+			}).start();
+		}
 	}
 
 	public class KeyboardListener implements KeyListener {
@@ -187,23 +172,62 @@ public class Game extends JPanel
 		}
 	}
 
-	private void clientStart() {
-		if (!singlePlayerMode) {
-			try {
-				this.gameClient = new Client();
-			} catch (IOException ignored) {}
-		}
+	/***
+	 * function that sets the correct index for the correct game panel
+	 */
+	private void setIndexForGameInstance() {
+		try {
+			Object obj = gameClient.getObjectInputStream().readObject();
+			if (obj instanceof Integer) {
+				this.index = (Integer) obj;
+				gameClient.index = this.index;
+			}
+		} catch (IOException | ClassNotFoundException ignored) {}
 	}
 
+	private void clientStart() {
+		try {
+			this.gameClient = new Client();
+		} catch (IOException ignored) {}
+	}
+
+	/***
+	 * function that creates for every game panel instance it's own client
+	 */
 	private void initializeClient()  {
-		if (!singlePlayerMode) {
-			// create for every game panel instance it's own client.
-			Polygon currentPlayer = this.players.get(this.index).polygon;
-			gameClient.p1 = currentPlayer;
+		gameClient.p1 = this.players.get(this.index).polygon;
+		gameClient.p2 = this.players.get(1 - this.index).polygon;
+
+		// if the client is sending the objects, he will just get them from the game panel
+		if (this.index == Constants.SENDER) {
 			gameClient.asteroids1 = asteroids;
 			gameClient.spaceships1 = spaceships;
 			gameClient.balls1 = balls;
 		}
+
+		// otherwise, the client will get the current objects from the other client
+		else {
+
+		}
+	}
+
+	/***
+	 * function that activate the thread of the current game panel and it's objects.
+	 */
+	private void activateMultiplayerGameObjects() {
+		Object obj;
+		try {
+			obj = gameClient.getObjectInputStream().readObject();
+			if (obj instanceof String) {
+				String command = (String)obj;
+				if (command.equals("start")) {
+					gameClient.t.start();
+					log.info("started " + index + "!");
+				}
+			}
+		} catch (IOException | ClassNotFoundException ignored) {}
+
+		activateGameObjects();
 	}
 
 
@@ -227,17 +251,17 @@ public class Game extends JPanel
 			players.add(singlePlayer);
 		}
 
-		//if ()
-
-		addAsteroidsToGame();
-
-		addSpaceshipsToGame();
+		if (this.index == Constants.SENDER) {
+			addAsteroidsToGame();
+			addSpaceshipsToGame();
+		}
 	}
 
 	private void activateGameObjects()
 	{
-		if (this.index == Constants.SENDER) {
-			for (Player player : players) player.start();
+		for (Player player : players) player.start(); // Do I need to activate all of the players or just the player for my game instance ?
+
+		if (this.index == Constants.SENDER) { // may cause a problem, will be checked
 			for (Asteroid asteroid : asteroids) asteroid.start();
 			for (Spaceship spaceship : spaceships) spaceship.start();
 		}
