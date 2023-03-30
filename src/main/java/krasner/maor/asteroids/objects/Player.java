@@ -31,7 +31,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	private final int startX; // starting x coordinate of the player
 	private final int startY; // starting y coordinate of the player
 	
-	private final Game game; // instance of the game panel
+	public final Game game; // instance of the game panel
 
 	public Game.KeyboardListener controls; // key listener for the player
 
@@ -522,7 +522,7 @@ public class Player extends Thread implements Serializable, ActionListener
 			if (inBounds)
 			{
 				// check for all asteroids
-				for (int indAst = 0; indAst < game.asteroids.size() && !this.collided && this.isPlayerSafelyRespawned; indAst++)
+				for (int indAst = 0;indAst < game.asteroids.size() && !this.collided && this.isPlayerSafelyRespawned; indAst++)
 				{
 					if (!collided)
 					{

@@ -1,6 +1,7 @@
 package krasner.maor.asteroids.game;
 
 import krasner.maor.asteroids.multiplayer.Client;
+import krasner.maor.asteroids.multiplayer.Data;
 import krasner.maor.asteroids.objects.Asteroid;
 import krasner.maor.asteroids.objects.Ball;
 import krasner.maor.asteroids.objects.Player;
@@ -96,13 +97,19 @@ public class Game extends JPanel
 			// Thread to update every 1 milliseconds the other player. This is the main thread of the panel
 			new Thread(() -> {
 				while (true) { // PROBLEM HERE, MUST FIX THE WHILE TRUE
-					gameClient.p1 = players.get(index).polygon;
 
-					if (this.index == Constants.SENDER) {
-						gameClient.asteroids1 = asteroids;
-						gameClient.spaceships1 = spaceships;
-						gameClient.balls1 = balls;
-					}
+					gameClient.p1 = players.get(index).polygon;
+					//gameClient.p2 = players.get(1 - index).polygon;
+
+
+					//if (this.index == Constants.SENDER) {
+						gameClient.asteroidsPolygons = new ArrayList<>();
+						for (int i = 0; i < this.asteroids.size(); i++)
+							gameClient.asteroidsPolygons.add(this.asteroids.get(i).getPolygon());
+						//gameClient.spaceships1 = spaceships;
+						//gameClient.balls1 = balls;
+					//}
+
 
 					int indexOfOther = 1 - index; // find the opposite player index
 
@@ -112,12 +119,14 @@ public class Game extends JPanel
 						players.get(indexOfOther).polygon.addPoint(gameClient.p2.xpoints[i], gameClient.p2.ypoints[i]);
 					}
 
+					for (int i = 0; i < gameClient.asteroidsPolygons.size(); i++)
+						this.asteroids.get(i).setPolygon(gameClient.asteroidsPolygons.get(i));
 
-					if (this.index == Constants.RECEIVER) {
-						this.asteroids = gameClient.asteroids2;
-						this.spaceships = gameClient.spaceships2;
-						this.balls = gameClient.balls2;
-					}
+					//if (this.index == Constants.RECEIVER) {
+						//this.asteroids = gameClient.asteroids;
+						//this.spaceships = gameClient.spaceships2;
+						//this.balls = gameClient.balls2;
+					//}
 
 
 					try {
@@ -195,20 +204,33 @@ public class Game extends JPanel
 	 * function that creates for every game panel instance it's own client
 	 */
 	private void initializeClient()  {
+
+		gameClient.p1 = this.players.get(this.index).polygon;
+		gameClient.p2 = this.players.get(1 - this.index).polygon;
+
+		gameClient.asteroidsPolygons = new ArrayList<>();
+		for (int i = 0; i < this.asteroids.size(); i++)
+			gameClient.asteroidsPolygons.add(this.asteroids.get(i).getPolygon());
+
+		//if (this.index == Constants.SENDER) {
+
+		//}
+
+		/*
 		gameClient.p1 = this.players.get(this.index).polygon;
 		gameClient.p2 = this.players.get(1 - this.index).polygon;
 
 		// if the client is sending the objects, he will just get them from the game panel
 		if (this.index == Constants.SENDER) {
-			gameClient.asteroids1 = asteroids;
-			gameClient.spaceships1 = spaceships;
-			gameClient.balls1 = balls;
+			gameClient.asteroids = asteroids;
+			//gameClient.spaceships1 = spaceships;
+			//gameClient.balls1 = balls;
 		}
-
-		// otherwise, the client will get the current objects from the other client
 		else {
-
+			gameClient.asteroids = players.get(1 - index).game.asteroids;
 		}
+
+		*/
 	}
 
 	/***
@@ -221,6 +243,7 @@ public class Game extends JPanel
 			if (obj instanceof String) {
 				String command = (String)obj;
 				if (command.equals("start")) {
+					//sendAndReceiveInitialObjects(); // must get the arrays first before we start
 					gameClient.t.start();
 					log.info("started " + index + "!");
 				}
@@ -230,6 +253,22 @@ public class Game extends JPanel
 		activateGameObjects();
 	}
 
+	private void sendAndReceiveInitialObjects() {
+		if (this.index == Constants.RECEIVER) {
+			try {
+				Object obj = gameClient.getObjectInputStream().readObject();
+				if (obj instanceof Data) {
+					Data dataobj = (Data)obj;
+					//gameClient.asteroids = dataobj.asteroids;
+				}
+			} catch (IOException | ClassNotFoundException ignored){
+				System.out.println("ERROR !!!!!!!!!");
+			}
+		}
+		else {
+			gameClient.sendInitialSettings();
+		}
+	}
 
 	private void recreateGame() {
 		destroyObjects();
@@ -251,10 +290,10 @@ public class Game extends JPanel
 			players.add(singlePlayer);
 		}
 
-		if (this.index == Constants.SENDER) {
+		//if (this.index == Constants.SENDER) {
 			addAsteroidsToGame();
 			addSpaceshipsToGame();
-		}
+		//}
 	}
 
 	private void activateGameObjects()
