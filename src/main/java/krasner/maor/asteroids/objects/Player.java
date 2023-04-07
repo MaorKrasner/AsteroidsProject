@@ -263,7 +263,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	 */
 	private boolean checkXBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
-		return polygon.xpoints[index] > 0 && polygon.xpoints[index] < Constants.SCREEN_WIDTH;
+		return polygon.xpoints[index] >= 0 && polygon.xpoints[index] <= Constants.SCREEN_WIDTH;
 	}
 
 	/***
@@ -274,7 +274,7 @@ public class Player extends Thread implements Serializable, ActionListener
 	 */
 	private boolean checkYBounds(int index) throws ArrayIndexOutOfBoundsException
 	{
-		return polygon.ypoints[index] > 0 && polygon.ypoints[index] < Constants.SCREEN_HEIGHT;
+		return polygon.ypoints[index] >= 0 && polygon.ypoints[index] <= Constants.SCREEN_HEIGHT;
 	}
 
 	/***
@@ -337,8 +337,10 @@ public class Player extends Thread implements Serializable, ActionListener
 		}
 
 		else {
-			if (!this.transferred)
-				transferPlayer();
+			if (!this.transferred) {
+				respawn();
+				this.transferred = true;
+			}
 		}
 	}
 
@@ -358,51 +360,6 @@ public class Player extends Thread implements Serializable, ActionListener
 			polygon.xpoints[i] += speedX * direction;
 			polygon.ypoints[i] += speedY * direction;
 		}
-	}
-
-	/***
-	 * find the value that we need to add/sub from each x/y coordinate
-	 * @param isOutOfWidth - is the polygon out of the sides of the screen
-	 * @return - return the max - min value of the x/y according to isOutOfWidth
-	 */
-	private int findValueForChange(boolean isOutOfWidth) {
-		// transfer left or right
-		if (isOutOfWidth) {
-			return Math.max(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]))
-					- Math.min(polygon.xpoints[0], Math.max(polygon.xpoints[1], polygon.xpoints[2]));
-		}
-
-		// else, return the difference between the y values because we need to transfer up or down
-		return Math.max(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]))
-				- Math.min(polygon.ypoints[0], Math.max(polygon.ypoints[1], polygon.ypoints[2]));
-	}
-
-	/***
-	 * transfer the player to the opposite edge of the screen
-	 */
-	private void transferPlayer() {
-
-		boolean isOutOfWidth = !(checkXBounds(0) || checkXBounds(1) || checkXBounds(2));
-		int toRemoveOrAdd = findValueForChange(isOutOfWidth);
-		int sign = (polygon.xpoints[0] >= Constants.SCREEN_WIDTH || polygon.ypoints[0] >= Constants.SCREEN_HEIGHT) ? -1 : 1;
-		int valueToTransfer = (isOutOfWidth) ? (Constants.SCREEN_WIDTH + toRemoveOrAdd) * sign : (Constants.SCREEN_HEIGHT + toRemoveOrAdd) * sign;
-
-		log.info("TRANSFERRED FROM : ");
-		log.info("x's : " + Arrays.toString(polygon.xpoints));
-		log.info("y's : " + Arrays.toString(polygon.ypoints));
-
-		for (int i = 0; i < polygon.npoints; i++) {
-			if (isOutOfWidth)
-				polygon.xpoints[i] += valueToTransfer;
-			else
-				polygon.ypoints[i] += valueToTransfer;
-		}
-
-		log.info("TO : ");
-		log.info("x's : " + Arrays.toString(polygon.xpoints));
-		log.info("y's : " + Arrays.toString(polygon.ypoints));
-
-		this.transferred = true;
 	}
 
 	/***
