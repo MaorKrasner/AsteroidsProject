@@ -30,7 +30,7 @@ public class Player extends Thread implements java.io.Serializable, ActionListen
 
 	private final int startX; // starting x coordinate of the player
 	private final int startY; // starting y coordinate of the player
-	
+
 	public final Game game; // instance of the game panel
 
 	public Game.KeyboardListener controls; // key listener for the player
@@ -48,7 +48,7 @@ public class Player extends Thread implements java.io.Serializable, ActionListen
 	public Polygon polygon; // polygon of the player
 
 	private Polygon respawnPolygon; // polygon that will help to respawn the player after he is dead
-	
+
 	public volatile boolean isDead = false; // is the player already dead or not
 
 	private Color playerColor = Color.WHITE;
@@ -60,15 +60,15 @@ public class Player extends Thread implements java.io.Serializable, ActionListen
 	@Getter
 	@Setter
 	private int score = 0; // how many points the player scored
-	
+
 	private double angle = 0; // angle of rotation
-	
+
 	public volatile boolean visible = true; // variable to know whether the player is visible or not
-	
+
 	public volatile boolean collided = false; // variable to know whether the player collided with another object or not
-	
+
 	public volatile int direction = 0; // variable to know what is the direction the player is moving in
-	
+
 	private volatile boolean isInSlope = false; // variable to know when the player is positioned with a slope or not
 
 	private volatile long startTime = 0; // variable to store the starting time when a player collided with another object
@@ -161,7 +161,7 @@ public class Player extends Thread implements java.io.Serializable, ActionListen
 
 	/***
 	 * initialize the array of lives
- 	 */
+	 */
 	public void initializePolygonLives()
 	{
 		int x = (Game.singlePlayerMode) ? 90 : 180, y = 15;
@@ -416,19 +416,19 @@ public class Player extends Thread implements java.io.Serializable, ActionListen
 	/***
 	 * rotate each point of the polygon by the current angle value
 	 */
-	public void rotateByAcceleration() 
+	public void rotateByAcceleration()
 	{
 		Point cent = findCentroidOfTriangle();
-		
+
 		for (int i = 0; i < polygon.npoints; i++)
 		{
 			double newX = cent.x + (polygon.xpoints[i] - cent.x) * Math.cos(angle) - (polygon.ypoints[i] - cent.y) * Math.sin(angle);
 			double newY = cent.y + (polygon.xpoints[i] - cent.x) * Math.sin(angle) + (polygon.ypoints[i] - cent.y) * Math.cos(angle);
-			
+
 			polygon.xpoints[i] = (int)Math.floor(newX);
 			polygon.ypoints[i] = (int)Math.floor(newY);
 		}
-		
+
 		isInSlope = Math.abs(polygon.xpoints[0] - findCentroidOfTriangle().x) > 1 && Math.abs(polygon.ypoints[0] - findCentroidOfTriangle().y) > 1;
 	}
 
