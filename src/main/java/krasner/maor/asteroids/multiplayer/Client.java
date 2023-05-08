@@ -1,9 +1,5 @@
 package krasner.maor.asteroids.multiplayer;
 
-import krasner.maor.asteroids.objects.Asteroid;
-import krasner.maor.asteroids.objects.Ball;
-import krasner.maor.asteroids.objects.Player;
-import krasner.maor.asteroids.objects.Spaceship;
 import krasner.maor.asteroids.util.Constants;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +32,10 @@ public class Client extends Thread {
     @Getter
     ObjectOutputStream objectOutputStream; // object output stream of the client
 
-    public Polygon p1, p2;
-
-    //public Polygon p1, p2; // two polygons , one for each player
-    public ArrayList<Polygon> asteroidsPolygons; // two array lists for each list of asteroids in the game
-    //public ArrayList<Spaceship> spaceships; // two array lists for each list of spaceships in the game
-    //public ArrayList<Ball> balls; // two array lists for each list of balls in the game
+    public Polygon playerPolygon1, playerPolygon2; // two polygons , one for each player
+    public ArrayList<Polygon> asteroidsPolygons1, asteroidsPolygons2; // two array lists for each list of asteroids in the game
+    public ArrayList<Polygon> spaceshipsPolygons1, spaceshipsPolygons2; // two array lists for each list of spaceships in the game
+    public ArrayList<Point> ballsPoints1, ballsPoints2; // two array lists for each list of balls in the game
 
     @Getter
     public Thread t; // thread to manage the transmission of data in the client
@@ -53,19 +47,18 @@ public class Client extends Thread {
      */
     public Client(Polygon p1) throws IOException
     {
-        this.p1 = p1;
-        this.p2 = new Polygon();
-        p2.addPoint(500, 500);
+        this.playerPolygon1 = new Polygon();
+        for (int i = 0; i < p1.npoints; i++)
+            this.playerPolygon1.addPoint(p1.xpoints[i], p1.ypoints[i]);
+        this.playerPolygon2 = new Polygon();
+        playerPolygon2.addPoint(500, 500);
 
-        this.asteroidsPolygons = new ArrayList<>();
-
-        /*
-        this.asteroids = new ArrayList<>();
-
-        this.spaceships = new ArrayList<>();
-
-        this.balls = new ArrayList<>();
-        */
+        asteroidsPolygons1 = new ArrayList<>();
+        asteroidsPolygons2 = new ArrayList<>();
+        spaceshipsPolygons1 = new ArrayList<>();
+        spaceshipsPolygons2 = new ArrayList<>();
+        ballsPoints1 = new ArrayList<>();
+        ballsPoints2 = new ArrayList<>();
 
         t = new Thread(this);
         connectToServer();
@@ -76,21 +69,18 @@ public class Client extends Thread {
      * @throws IOException
      */
     public Client() throws IOException {
-        this.p1 = new Polygon();
-        p1.addPoint(500, 500);
+        this.playerPolygon1 = new Polygon();
+        playerPolygon1.addPoint(500, 500);
 
-        this.p2 = new Polygon();
-        p2.addPoint(500, 500);
+        this.playerPolygon2 = new Polygon();
+        playerPolygon2.addPoint(500, 500);
 
-        this.asteroidsPolygons = new ArrayList<>();
-
-        /*
-        this.asteroids = new ArrayList<>();
-
-        this.spaceships = new ArrayList<>();
-
-        this.balls = new ArrayList<>();
-        */
+        asteroidsPolygons1 = new ArrayList<>();
+        asteroidsPolygons2 = new ArrayList<>();
+        spaceshipsPolygons1 = new ArrayList<>();
+        spaceshipsPolygons2 = new ArrayList<>();
+        ballsPoints1 = new ArrayList<>();
+        ballsPoints2 = new ArrayList<>();
 
         t = new Thread(this);
         connectToServer();
@@ -130,26 +120,42 @@ public class Client extends Thread {
     {
         while (true)
         {
-            Data data1, data2;
+            Packet packet1, packet2;
 
             try {
                 Polygon p = new Polygon();
-                for (int i = 0; i < this.p1.npoints; i++)
-                    p.addPoint(this.p1.xpoints[i], this.p1.ypoints[i]);
+                for (int i = 0; i < playerPolygon1.npoints; i++)
+                    p.addPoint(playerPolygon1.xpoints[i], playerPolygon1.ypoints[i]);
 
-                ArrayList<Polygon> temporaryAsteroids = new ArrayList<>(this.asteroidsPolygons);
+                packet1 = new Packet(p);
 
-                data1 = new Data(p);
-                data1.asteroidsPolygons = temporaryAsteroids;
-                objectOutputStream.writeObject(data1);
+                ArrayList<Polygon> asteroidsPolygonsTemp = new ArrayList<>();
+                ArrayList<Polygon> spaceshipsPolygonsTemp = new ArrayList<>();
+                ArrayList<Point> ballsPointsTemp = new ArrayList<>();
 
-                data2 = (Data) objectInputStream.readObject();
+                asteroidsPolygonsTemp.addAll(asteroidsPolygons1);
+                spaceshipsPolygonsTemp.addAll(spaceshipsPolygons1);
+                ballsPointsTemp.addAll(ballsPoints1);
 
-                this.p2 = new Polygon();
-                for (int i = 0; i < data2.playerPolygon.npoints; i++)
-                    this.p2.addPoint(data2.playerPolygon.xpoints[i], data2.playerPolygon.ypoints[i]);
+                packet1.asteroidsPolygons = asteroidsPolygonsTemp;
+                packet1.spaceshipsPolygons = spaceshipsPolygonsTemp;
+                packet1.ballsPoints = ballsPointsTemp;
 
-                this.asteroidsPolygons = data2.asteroidsPolygons;
+                objectOutputStream.writeObject(packet1);
+
+                packet2 = (Packet) objectInputStream.readObject();
+                playerPolygon2 = new Polygon();
+
+                for (int i = 0; i < packet2.playerPolygon.npoints; i++)
+                    playerPolygon2.addPoint(packet2.playerPolygon.xpoints[i], packet2.playerPolygon.ypoints[i]);
+
+                asteroidsPolygons2 = new ArrayList<>();
+                spaceshipsPolygons2 = new ArrayList<>();
+                ballsPoints2 = new ArrayList<>();
+
+                asteroidsPolygons2.addAll(packet2.asteroidsPolygons);
+                spaceshipsPolygons2.addAll(packet2.spaceshipsPolygons);
+                ballsPoints2.addAll(packet2.ballsPoints);
 
             } catch (IOException e) {
                 try {

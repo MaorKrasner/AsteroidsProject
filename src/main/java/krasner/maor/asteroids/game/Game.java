@@ -1,7 +1,7 @@
 package krasner.maor.asteroids.game;
 
 import krasner.maor.asteroids.multiplayer.Client;
-import krasner.maor.asteroids.multiplayer.Data;
+import krasner.maor.asteroids.multiplayer.Packet;
 import krasner.maor.asteroids.objects.Asteroid;
 import krasner.maor.asteroids.objects.Ball;
 import krasner.maor.asteroids.objects.Player;
@@ -30,15 +30,16 @@ import java.util.Random;
 @Slf4j
 public class Game extends JPanel
 {
+	//TODO : CHECK PRIVATE FINAL STATIC VARIABLES FOR ALL OBJECT CLASSES
 	@Serial
 	private static final long serialVersionUID = 1L;
 	private final GameFrame frame;
 	public final KeyboardListener keyboard;
 	public static boolean singlePlayerMode = true; // flag to know if we want to play single player or multiplayer
 
-	public ArrayList<Asteroid> asteroids;
-	public ArrayList<Ball> balls;
-	public ArrayList<Spaceship> spaceships;
+	public ArrayList<Asteroid> asteroids, secondAsteroids;
+	public ArrayList<Ball> balls, secondBalls;
+	public ArrayList<Spaceship> spaceships, secondSpaceships;
 	public ArrayList<Player> players;
 	public Player player1, player2;
 	public static Player singlePlayer;
@@ -82,6 +83,10 @@ public class Game extends JPanel
 
 		// multiplayer mode
 		else {
+			secondAsteroids = new ArrayList<>();
+			secondBalls = new ArrayList<>();
+			secondSpaceships = new ArrayList<>();
+
 			clientStart();
 
 			setIndexForGameInstance();
@@ -94,6 +99,9 @@ public class Game extends JPanel
 
 			activateMultiplayerGameObjects();
 
+			createClientThread();
+
+			/*
 			// Thread to update every 1 milliseconds the other player. This is the main thread of the panel
 			new Thread(() -> {
 				while (true) { // PROBLEM HERE, MUST FIX THE WHILE TRUE
@@ -134,7 +142,45 @@ public class Game extends JPanel
 					} catch (InterruptedException ignored){}
 				}
 			}).start();
+			*/
 		}
+	}
+
+	public void createClientThread() {
+		new Thread(() -> {
+			while (true) {
+				gameClient.playerPolygon1 = players.get(index).polygon;
+
+				//if (this.index == Constants.SENDER) {
+				gameClient.asteroidsPolygons1 = new ArrayList<>();
+				gameClient.spaceshipsPolygons1 = new ArrayList<>();
+				gameClient.ballsPoints1 = new ArrayList<>();
+
+				for (Asteroid asteroid : asteroids) gameClient.asteroidsPolygons1.add(asteroid.getPolygon());
+				for (Spaceship spaceship : spaceships) gameClient.spaceshipsPolygons1.add(spaceship.getPolygon());
+				for (Ball ball : balls) gameClient.ballsPoints1.add(new Point(ball.getX(), ball.getY()));
+				//}
+
+				players.get(1 - index).polygon = new Polygon();
+				for (int i = 0; i < gameClient.playerPolygon2.npoints; i++)
+					players.get(1 - index).polygon.addPoint(gameClient.playerPolygon2.xpoints[i], gameClient.playerPolygon2.ypoints[i]);
+
+				//if (this.index == Constants.RECEIVER) {
+				if (gameClient.asteroidsPolygons2.size() > 0 && gameClient.spaceshipsPolygons2.size() > 0) {
+					for (int i = 0; i < gameClient.asteroidsPolygons2.size(); i++)
+						secondAsteroids.get(i).setPolygon(gameClient.asteroidsPolygons2.get(i)); // prob here
+
+					for (int i = 0; i < gameClient.spaceshipsPolygons2.size(); i++)
+						secondSpaceships.get(i).setPolygon(gameClient.spaceshipsPolygons2.get(i));
+
+					for (int i = 0; i < gameClient.ballsPoints2.size(); i++) {
+						secondBalls.get(i).setX((int) gameClient.ballsPoints2.get(i).getX());
+						secondBalls.get(i).setY((int) gameClient.ballsPoints2.get(i).getY());
+					}
+				}
+				//}
+			}
+		}).start();
 	}
 
 	public class KeyboardListener implements KeyListener {
@@ -205,32 +251,17 @@ public class Game extends JPanel
 	 */
 	private void initializeClient()  {
 
-		gameClient.p1 = this.players.get(this.index).polygon;
-		gameClient.p2 = this.players.get(1 - this.index).polygon;
+		gameClient.playerPolygon1 = this.players.get(this.index).polygon;
+		gameClient.playerPolygon2 = this.players.get(1 - this.index).polygon;
 
-		gameClient.asteroidsPolygons = new ArrayList<>();
-		for (int i = 0; i < this.asteroids.size(); i++)
-			gameClient.asteroidsPolygons.add(this.asteroids.get(i).getPolygon());
+		for (Asteroid asteroid : this.asteroids) gameClient.asteroidsPolygons1.add(asteroid.getPolygon());
+		for (Asteroid asteroid : this.secondAsteroids) gameClient.asteroidsPolygons2.add(asteroid.getPolygon());
 
-		//if (this.index == Constants.SENDER) {
+		for (Spaceship spaceship : this.spaceships) gameClient.spaceshipsPolygons1.add(spaceship.getPolygon());
+		for (Spaceship spaceship : this.secondSpaceships) gameClient.spaceshipsPolygons2.add(spaceship.getPolygon());
 
-		//}
-
-		/*
-		gameClient.p1 = this.players.get(this.index).polygon;
-		gameClient.p2 = this.players.get(1 - this.index).polygon;
-
-		// if the client is sending the objects, he will just get them from the game panel
-		if (this.index == Constants.SENDER) {
-			gameClient.asteroids = asteroids;
-			//gameClient.spaceships1 = spaceships;
-			//gameClient.balls1 = balls;
-		}
-		else {
-			gameClient.asteroids = players.get(1 - index).game.asteroids;
-		}
-
-		*/
+		for (Ball ball : this.balls) gameClient.ballsPoints1.add(new Point(ball.getX(), ball.getY()));
+		for (Ball ball : this.secondBalls) gameClient.ballsPoints1.add(new Point(ball.getX(), ball.getY()));
 	}
 
 	/***
@@ -257,8 +288,8 @@ public class Game extends JPanel
 		if (this.index == Constants.RECEIVER) {
 			try {
 				Object obj = gameClient.getObjectInputStream().readObject();
-				if (obj instanceof Data) {
-					Data dataobj = (Data)obj;
+				if (obj instanceof Packet) {
+					Packet dataobj = (Packet)obj;
 					//gameClient.asteroids = dataobj.asteroids;
 				}
 			} catch (IOException | ClassNotFoundException ignored){
@@ -291,8 +322,14 @@ public class Game extends JPanel
 		}
 
 		//if (this.index == Constants.SENDER) {
-			addAsteroidsToGame();
-			addSpaceshipsToGame();
+		addAsteroidsToGame();
+		addSpaceshipsToGame();
+
+		if (!singlePlayerMode) {
+			this.secondAsteroids.addAll(this.asteroids);
+			this.secondSpaceships.addAll(this.spaceships);
+			this.secondBalls.addAll(this.balls);
+		}
 		//}
 	}
 
@@ -300,10 +337,11 @@ public class Game extends JPanel
 	{
 		for (Player player : players) player.start(); // Do I need to activate all of the players or just the player for my game instance ?
 
-		if (this.index == Constants.SENDER) { // may cause a problem, will be checked
-			for (Asteroid asteroid : asteroids) asteroid.start();
-			for (Spaceship spaceship : spaceships) spaceship.start();
-		}
+		//if (this.index == Constants.SENDER) { // may cause a problem, will be checked
+		for (Asteroid asteroid : asteroids) asteroid.start();
+		for (Spaceship spaceship : spaceships) spaceship.start();
+		for (Ball ball : balls) ball.start();
+		//}
 	}
 
 	public void destroyObjects()
@@ -380,7 +418,12 @@ public class Game extends JPanel
 
 			Asteroid a = new Asteroid(arrX[xPosition], arrY[yPosition], Constants.SIZE_TYPES[random.nextInt(3)],
 					Constants.ASTEROID_TYPES[random.nextInt(3)], this, Constants.asteroidsMonitor);
+			Asteroid b = new Asteroid(arrX[xPosition], arrY[yPosition], Constants.SIZE_TYPES[random.nextInt(3)],
+					Constants.ASTEROID_TYPES[random.nextInt(3)], this, Constants.asteroidsMonitor);
 			asteroids.add(a);
+
+			if (secondAsteroids != null)
+				secondAsteroids.add(b);
 		}
 	}
 	
@@ -394,6 +437,11 @@ public class Game extends JPanel
 			else // otherwise (odd case), let it go from right to left
 				tmp = new Spaceship(Constants.SCREEN_WIDTH + 100, 250, Constants.SIZE_TYPES[random.nextInt(3)], this, Constants.spaceshipsMonitor);
 			spaceships.add(tmp);
+
+			tmp = new Spaceship(-100, 250, Constants.SIZE_TYPES[random.nextInt(3)], this, Constants.spaceshipsMonitor);
+
+			if (secondSpaceships != null)
+				secondSpaceships.add(tmp);
 		}
 	}
 
@@ -425,6 +473,16 @@ public class Game extends JPanel
 					}
 				}
 			}
+			if (secondAsteroids != null) {
+				if (!secondAsteroids.isEmpty()) {
+					synchronized (secondAsteroids) {
+						for (Asteroid asteroid : secondAsteroids) {
+							if (asteroid.isAlive() && asteroid.getPolygon().npoints > 0)
+								asteroid.drawAsteroid(g);
+						}
+					}
+				}
+			}
 			this.isIterating = false;
 		} catch (ConcurrentModificationException ignored) {}
 	}
@@ -440,6 +498,17 @@ public class Game extends JPanel
 					}
 				}
 			}
+			if (secondBalls != null) {
+				if (!secondBalls.isEmpty()) {
+					synchronized (secondBalls) {
+						for (Ball ball : secondBalls) {
+							if (ball.isAlive() && ball.getSize() > 0) {
+								ball.drawBall(g);
+							}
+						}
+					}
+				}
+			}
 			this.isIterating = false;
 		} catch (ConcurrentModificationException ignored) {}
 	}
@@ -449,6 +518,14 @@ public class Game extends JPanel
 			this.isIterating = true;
 			if (!spaceships.isEmpty()) {
 				synchronized (spaceships) {
+					for (Spaceship spaceship : spaceships) {
+						if (spaceship.isAlive() && spaceship.getPolygon().npoints > 0)
+							spaceship.drawSpaceship(g);
+					}
+				}
+			}
+			if (secondSpaceships != null) {
+				if (!spaceships.isEmpty()) {
 					for (Spaceship spaceship : spaceships) {
 						if (spaceship.isAlive() && spaceship.getPolygon().npoints > 0)
 							spaceship.drawSpaceship(g);

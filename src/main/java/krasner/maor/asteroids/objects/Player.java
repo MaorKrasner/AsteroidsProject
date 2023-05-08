@@ -22,7 +22,7 @@ import java.util.LinkedList;
  */
 
 @Slf4j
-public class Player extends Thread implements Serializable, ActionListener
+public class Player extends Thread implements java.io.Serializable, ActionListener
 {
 	private int x; // x coordinate of the player
 
@@ -109,14 +109,15 @@ public class Player extends Thread implements Serializable, ActionListener
 		this.controls = controls;
 		this.index = panelIndex;
 		this.connected = true;
+
 		arrx = new int[]{x, x - 20, x + 20};
 		arry = new int[]{y, y + 70, y + 70};
 		polygon = new Polygon(arrx, arry, 3);
+
 		respawnPolygon = new Polygon();
 		for (int i = 0; i < polygon.npoints; i++)
-		{
 			respawnPolygon.addPoint(polygon.xpoints[i], polygon.ypoints[i]);
-		}
+
 		this.initializePolygonLives();
 	}
 
