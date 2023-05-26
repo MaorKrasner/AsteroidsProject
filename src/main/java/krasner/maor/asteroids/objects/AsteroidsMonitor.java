@@ -7,7 +7,7 @@ package krasner.maor.asteroids.objects;
 
 public class AsteroidsMonitor 
 {
-	private int nextTurn = 6;
+	private int nextTurn = 5;
 
 	/***
 	 * function to schedule spaceships
