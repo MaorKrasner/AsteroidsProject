@@ -54,7 +54,7 @@ public class Server {
         socket1 = server.accept();
         clients.add(socket1);
         log.info("AMOUNT OF CLIENTS : " + clients.size());
-        log.info("AM : " + Server.ClientCounter);
+        log.info("CLIENT INDEX : " + Server.ClientCounter);
         outputStream1 = socket1.getOutputStream();
         objectOutputStream1 = new ObjectOutputStream(outputStream1);
 
@@ -64,7 +64,7 @@ public class Server {
         socket2 = server.accept();
         clients.add(socket2);
         log.info("AMOUNT OF CLIENTS : " + clients.size());
-        log.info("AM : " + Server.ClientCounter);
+        log.info("CLIENT INDEX : " + Server.ClientCounter);
         outputStream2 = socket2.getOutputStream();
         objectOutputStream2 = new ObjectOutputStream(outputStream2);
 
@@ -86,15 +86,13 @@ public class Server {
             while (true)
             {
                 try {
-                    Data d1 = (Data) objectInputStream1.readObject(); // read data from client1
-
-                    objectOutputStream2.writeObject(d1); // send data to client2
+                    Packet p1 = (Packet) objectInputStream1.readObject(); // read data from client1
+                    objectOutputStream2.writeObject(p1); // send data to client2
 
                     try {
                         Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    } catch (InterruptedException ignored) {}
+
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -106,15 +104,12 @@ public class Server {
             while (true)
             {
                 try {
-                    Data d2 = (Data) objectInputStream2.readObject(); // read data from client2
-
-                    objectOutputStream1.writeObject(d2);// send data to client1
+                    Packet p2 = (Packet) objectInputStream2.readObject(); // read data from client2
+                    objectOutputStream1.writeObject(p2);// send data to client1
 
                     try {
                         Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    } catch (InterruptedException ignored) {}
 
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
